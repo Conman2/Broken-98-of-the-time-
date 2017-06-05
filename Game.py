@@ -2,10 +2,10 @@ import pygame
 import math
 import time
 
-#the magic function that must be called
+#The magic function that must be called
 pygame.init()
 
-#colour libary definned through RGB
+#Colour libary definned through RGB
 black = (0,0,0)
 white = (255,255,255)
 red = (255,0,0)
@@ -17,16 +17,31 @@ blue = (0,0,255)
 Screen = pygame.display.set_mode((Screen_Width, Screen_Height))
 
 #Positions and stuff
-x = x_npc = Screen_Width/2
-y = Screen_Height/2
-xspeed = yspeed = 0
-xd = xa = ys = yw = 0
-x_npc = x
+player_x = x_npc = Screen_Width/2
+player_y = Screen_Height/2
+xspeed = yspeed = xd = xa = ys = yw = dx = dy = 0
 x_npc_speed = 3
-y_npc = Screen_Height/3
+y_npc = Screen_Height/4
 player_rad = npc_rad = 20
-shoot_dist = 150
+shoot_dist = 200
 NPC_move = True
+size = 3
+Bullet_array = []
+
+#Creating Bullets
+class Bullet():
+    def __init__(self,x_npc,y_npc,dx,dy,size):
+        self.size = size
+        self.x = x_npc
+        self.y = y_npc
+        self.speed = 4
+        self.thickness = 1
+        self.Velocity_x = self.speed*(dx/(dx+dy))
+        self.Velocity_y = self.speed*(dy/(dx+dy))
+    def Position(self):
+        self.x += self.Velocity_x
+        self.y += self.Velocity_y
+        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.size, self.thickness)
 
 #Used to control game speed linking it to FPS
 Clock = pygame.time.Clock()
@@ -60,37 +75,43 @@ while True:
                 ys = False
 
     #Players Movement
-    xspeed = 4*(xd - xa)
-    yspeed = 4*(ys - yw)
+    xspeed = 6*(xd - xa)
+    yspeed = 6*(ys - yw)
 
     if abs(xspeed) == abs(yspeed):
-        x += xspeed*0.5
-        y += yspeed*0.5
+        player_x += xspeed*0.5
+        player_y += yspeed*0.5
     else:
-        x += xspeed
-        y += yspeed
+        player_x += xspeed
+        player_y += yspeed
 
-    pygame.draw.circle(Screen,blue,(int(x),int(y)),player_rad, 1)
+    pygame.draw.circle(Screen,blue,(int(player_x),int(player_y)),player_rad, 1)
 
     #NPCs movement
-    if x_npc > Screen_Width/2 + 50:
-        x_npc_speed = -3
-    elif x_npc < Screen_Width/2 - 50:
-        x_npc_speed = 3
-
-    x_npc += x_npc_speed
-
     if NPC_move is True:
-        pygame.draw.circle(Screen,red,(int(x_npc),int(y_npc)),npc_rad, 1)
+        if x_npc > Screen_Width/2 + 50:
+            x_npc_speed = -3
+        elif x_npc < Screen_Width/2 - 50:
+            x_npc_speed = 3
+        x_npc += x_npc_speed
+
+    pygame.draw.circle(Screen,red,(int(x_npc),int(y_npc)),npc_rad, 1)
+
+    #Difference in Position for PLayer to Enemy
+    dx = x_npc-player_x
+    dy = y_npc-player_y
 
     #Collision
-    distance = math.hypot(x_npc-x, y_npc-y)
-    if distance < player_rad + npc_rad + shoot_dist #+ xspeed + x_npc_speed + yspeed:
+    distance = math.hypot(dx, dy)
+    if distance < player_rad + npc_rad + shoot_dist + xspeed + x_npc_speed + yspeed:
         NPC_move = False
-        x_bullet = x_npc
-        y_bullet = y_npc
-
-        pygame.draw.circle(Screen,black,(int(x_bullet),int(y_bullet)),3, 1)
+        bullet = Bullet(x_npc,y_npc,dx,dy,size)
+        Bullet_array.append(bullet)
+        for bullet in Bullet_array:
+            bullet.Position()
+            #Remove the bullet if it flies up off the screen
+            #if Bullet.rect.y < -10 or Bullet.rect.x < -10:
+            #    Bullet_array.remove(Bullet)
     else:
         NPC_move = True
 
