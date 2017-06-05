@@ -7,10 +7,10 @@ pygame.init()
 
 #Colour libary definned through RGB
 black = (0,0,0)
-white = (255,255,255)
 red = (255,0,0)
 green = (0,255,0)
 blue = (0,0,255)
+white = (255,255,255)
 
 #Screen display deminsions
 (Screen_Width,Screen_Height) = (800,600)
@@ -20,10 +20,10 @@ Screen = pygame.display.set_mode((Screen_Width, Screen_Height))
 player_x = x_npc = Screen_Width/2
 player_y = Screen_Height/2
 xspeed = yspeed = xd = xa = ys = yw = dx = dy = 0
-x_npc_speed = 3
-y_npc = Screen_Height/4
 player_rad = npc_rad = 20
-shoot_dist = 200
+y_npc = Screen_Height/4
+shoot_dist = 100
+x_npc_speed = 3
 NPC_move = True
 size = 3
 Bullet_array = []
@@ -34,10 +34,10 @@ class Bullet():
         self.size = size
         self.x = x_npc
         self.y = y_npc
-        self.speed = 4
+        self.speed = 6
         self.thickness = 1
-        self.Velocity_x = self.speed*(dx/(dx+dy))
-        self.Velocity_y = self.speed*(dy/(dx+dy))
+        self.Velocity_x = self.speed*(-dx/(abs(dx)+abs(dy)))
+        self.Velocity_y = self.speed*(-dy/(abs(dx)+abs(dy)))
     def Position(self):
         self.x += self.Velocity_x
         self.y += self.Velocity_y
@@ -53,7 +53,6 @@ while True:
             pygame.quit()
             quit()
             break
-
         #Taking the User Inputs
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_a:
@@ -109,13 +108,16 @@ while True:
         Bullet_array.append(bullet)
         for bullet in Bullet_array:
             bullet.Position()
-            #Remove the bullet if it flies up off the screen
-            #if Bullet.rect.y < -10 or Bullet.rect.x < -10:
-            #    Bullet_array.remove(Bullet)
+            if bullet.x > Screen_Width or bullet.x < 0 or bullet.y > Screen_Height or bullet.y < 0:
+                Bullet_array.remove(bullet)
     else:
         NPC_move = True
+        for bullet in Bullet_array:
+            bullet.Position()
+            if bullet.x > Screen_Width or bullet.x < 0 or bullet.y > Screen_Height or bullet.y < 0:
+                Bullet_array.remove(bullet)
 
     #Updates any changes to the screen
     pygame.display.update()
     Screen.fill(white)
-    Clock.tick(30)
+    Clock.tick(fps)
