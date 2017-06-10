@@ -2,7 +2,6 @@ import pygame
 import math
 import time
 from random import randint, choice
-import numpy
 
 ''' Variable Managment '''
 #Colour libary
@@ -13,6 +12,7 @@ blue = (0,0,255)
 pink = (255,105,180)
 orange = (255,165,0)
 white = (255,255,255)
+clear = (0,0,0,0)
 
 #Screen display deminsions
 (Screen_Width,Screen_Height) = (840,660) #Note this Both need to be Multiples of 60
@@ -25,11 +25,13 @@ fps = 30
 #Initializing Variables
 xspeed = yspeed = xd = xa = ys = yw = dx = dy = 0
 Player_Bullet_array = []
+Tracker_Bullet_array = []
 Bullet_array = []
 Block_array = []
 NPC_1_array = []
 mouse_state = key_state = False
 NPC_move = True
+Do_not_change = False
 
 #Positions and Other Variables
 player_y = Screen_Height/2
@@ -37,7 +39,7 @@ player_x = Screen_Width/2
 player_rad = npc_rad = 20
 shoot_dist = 150
 sheild_rad = 30
-NPC_Number = 1
+NPC_Number = 3
 Bullet_rad = 3
 Bullet_spray = 0.1
 Block_size = 60
@@ -60,37 +62,24 @@ class Bullet():
         self.x += self.Velocity_x
         self.y += self.Velocity_y
         pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Bullet_rad, self.Thickness)
+    def Invisible(self,faster):
+        self.x += self.Velocity_x*faster
+        self.y += self.Velocity_y*faster
 
 ''' Where all the NPCs Live '''
 class NPC_1():
-    def __init__(self,x_pos,y_pos,npc_rad,movement,Speed,Colour):
+    def __init__(self,x_pos,y_pos,npc_rad,Speed,Colour):
         self.Radius = npc_rad
         self.Colour = Colour
-        self.x = self.Mid_x = x_pos
-        self.y = self.Mid_y = y_pos
-        self.Speedx = self.Speedy = Speed
+        self.x = self.last_seen_x = x_pos
+        self.y = self.last_seen_y = y_pos
+        self.Speed = Speed-3
         self.Thickness = 1
-        #When using this input the first memeber in the arrray must be 'x' or 'y'
-        if movement[0] == 'y':
-            self.X_range = 0
-            self.Y_range = movement[1]
-        if movement[0] == 'x':
-            self.X_range = movement[1]
-            self.Y_range = 0
-    #For When the NPC needs to move
-    def Movement(self):
-        if self.X_range != 0:
-            if self.x > self.Mid_x + self.X_range:
-                Speedx = -self.Speedx
-            elif self.x < self.Mid_x - self.X_range:
-                Speedx = self.Speedx
-            self.x += self.Speedx
-        elif self.Y_range != 0:
-            if self.y > self.Mid_y + self.Y_range:
-                self.Speedy = -self.Speedy
-            elif self.y < self.Mid_y - self.Y_range:
-                self.Speedy = self.Speedy
-            self.y += self.Speedy
+    def Movement(self,last_seen_x,last_seen_y):
+        self.Velocity_x = self.Speed*(-last_seen_x/(abs(last_seen_x)+abs(last_seen_y)))
+        self.Velocity_y = self.Speed*(-last_seen_y/(abs(last_seen_x)+abs(last_seen_y)))
+        self.x += self.Velocity_x
+        self.y += self.Velocity_y
         pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Radius, self.Thickness)
     #For When the NPC needs to stand stationary
     def Still(self):
@@ -110,22 +99,19 @@ class NPC_1():
     #Breaking Up the Screen
     X_range = range(0, Screen_Width, Block_size)
     Y_range = range(0, Screen_Height, Block_size)
-    Path_Finding_array = numpy.zeros((len(X_range), len(Y_range)))
 
     #Creating the Spawn Locations in an Array
     for i in range(0,Block_number):
         X_value = choice(X_range)
         Y_value = choice(Y_range)
-        #Adding the Data to the Position Matrix
-        Path_Finding_array[int(X_value/60)][int(Y_value/60)] = 1
-        #Adding the Blocks to the Array
         block = Block(X_value, Y_value, Block_size)
         Block_array.append(block)
-        print(Path_Finding_array)
-
 
 #Initializing Pygame cus reasons
 pygame.init()
+
+last_seen_x = Screen_Width/2
+last_seen_y = Screen_Height/2
 
 while True:
     Screen.fill(white)
@@ -185,22 +171,42 @@ while True:
 
     ''' Creating NPCs '''
     if len(NPC_1_array) < NPC_Number:
-        npc_1 = NPC_1(randint(2*npc_rad, Screen_Width-2*npc_rad),randint(2*npc_rad, Screen_Height-2*npc_rad),npc_rad,('x',50),4,blue)
+        npc_1 = NPC_1(randint(2*npc_rad, Screen_Width-2*npc_rad),randint(2*npc_rad, Screen_Height-2*npc_rad),npc_rad,4,blue)
         NPC_1_array.append(npc_1)
 
     ''' Updating all of the Bullets and NPCs'''
     #Moves the NPCs and Determins if they should shoot
     for npc_1 in NPC_1_array:
         #Create the NPC Bullet
+        distance_player = math.hypot(dx, dy)
         dx = npc_1.x - player_x
         dy = npc_1.y - player_y
-        distance_player = math.hypot(dx, dy)
         if distance_player < player_rad + npc_rad + shoot_dist:
             bullet = Bullet(npc_1.x ,npc_1.y, dx + randint(-abs(int(Bullet_spray*dx)),abs(int(Bullet_spray*dx))), dy+ randint(-abs(int(Bullet_spray*dy)),abs(int(Bullet_spray*dy))), Bullet_rad,black)
             Bullet_array.append(bullet)
+        #Invisible Bullets Check
+        tracker_bullet = Bullet(npc_1.x ,npc_1.y, dx, dy, 1, clear)
+        Tracker_Bullet_array.append(tracker_bullet)
+        for tracker_bullet in Tracker_Bullet_array:
+            tracker_bullet.Invisible(2)
+            #tracker_bullet.Position()
+            for block in Block_array:
+                if tracker_bullet.x in range(block.x, block.x + Block_size) and tracker_bullet.y in range(block.y, block.y + Block_size):
+                    Tracker_Bullet_array.remove(tracker_bullet)
+            if tracker_bullet.x > Screen_Width or tracker_bullet.x < 0 or tracker_bullet.y > Screen_Height or tracker_bullet.y < 0:
+                Tracker_Bullet_array.remove(tracker_bullet)
+            distance_tracker = math.hypot((tracker_bullet.x - player_x),(tracker_bullet.y - player_y))
+            if distance_tracker < player_rad:
+                last_seen_x = player_x
+                last_seen_y = player_y
+                Do_not_change = True
+        if Do_not_change == True:
+            diffx = npc_1.x - last_seen_x
+            diffy = npc_1.y - last_seen_y
+            npc_1.Movement(diffx,diffy)
+        if npc_1.x == last_seen_x or npc_1.y == last_seen_y:
+            Do_not_change = False
             npc_1.Still()
-        else:
-            npc_1.Movement()
 
     #The Players Bullets
     for player_bullet in Player_Bullet_array:
@@ -219,5 +225,5 @@ while True:
                 Bullet_array.remove(bullet)
 
     ''' Updating Changes to the Screen '''
-    pygame.display.update()
+    pygame.display.flip()
     Clock.tick(fps)
