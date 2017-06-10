@@ -2,6 +2,7 @@ import pygame
 import math
 import time
 from random import randint, choice
+import numpy
 
 ''' Variable Managment '''
 #Colour libary
@@ -14,7 +15,7 @@ orange = (255,165,0)
 white = (255,255,255)
 
 #Screen display deminsions
-(Screen_Width,Screen_Height) = (800,600)
+(Screen_Width,Screen_Height) = (840,660) #Note this Both need to be Multiples of 60
 Screen = pygame.display.set_mode((Screen_Width, Screen_Height))
 
 #Used to control game speed linking it to FPS
@@ -36,6 +37,7 @@ player_x = Screen_Width/2
 player_rad = npc_rad = 20
 shoot_dist = 150
 sheild_rad = 30
+NPC_Number = 1
 Bullet_rad = 3
 Bullet_spray = 0.1
 Block_size = 60
@@ -64,12 +66,10 @@ class NPC_1():
     def __init__(self,x_pos,y_pos,npc_rad,movement,Speed,Colour):
         self.Radius = npc_rad
         self.Colour = Colour
-        self.x = x_pos
-        self.y = y_pos
+        self.x = self.Mid_x = x_pos
+        self.y = self.Mid_y = y_pos
         self.Speedx = self.Speedy = Speed
         self.Thickness = 1
-        self.Mid_x = x_pos
-        self.Mid_y = y_pos
         #When using this input the first memeber in the arrray must be 'x' or 'y'
         if movement[0] == 'y':
             self.X_range = 0
@@ -81,9 +81,9 @@ class NPC_1():
     def Movement(self):
         if self.X_range != 0:
             if self.x > self.Mid_x + self.X_range:
-                self.Speedx = -(self.Speedx)
+                Speedx = -self.Speedx
             elif self.x < self.Mid_x - self.X_range:
-                self.Speedx = self.Speedx
+                Speedx = self.Speedx
             self.x += self.Speedx
         elif self.Y_range != 0:
             if self.y > self.Mid_y + self.Y_range:
@@ -107,19 +107,28 @@ class NPC_1():
             pygame.draw.rect(Screen, self.Colour, (self.x, self.y, self.Size, self.Size), 1)
 
     ''' Random Spawning of Blocks '''
-    #Breaking up the room into Multiple Block size Segments
+    #Breaking Up the Screen
     X_range = range(0, Screen_Width, Block_size)
     Y_range = range(0, Screen_Height, Block_size)
+    Path_Finding_array = numpy.zeros((len(X_range), len(Y_range)))
 
     #Creating the Spawn Locations in an Array
     for i in range(0,Block_number):
-        block = Block(choice(X_range), choice(Y_range), Block_size)
+        X_value = choice(X_range)
+        Y_value = choice(Y_range)
+        #Adding the Data to the Position Matrix
+        Path_Finding_array[int(X_value/60)][int(Y_value/60)] = 1
+        #Adding the Blocks to the Array
+        block = Block(X_value, Y_value, Block_size)
         Block_array.append(block)
+        print(Path_Finding_array)
+
 
 #Initializing Pygame cus reasons
 pygame.init()
 
 while True:
+    Screen.fill(white)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -141,11 +150,24 @@ while True:
     if abs(xspeed) == abs(yspeed):
         player_x += xspeed*0.5
         player_y += yspeed*0.5
-        pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),player_rad, 1)
     else:
         player_x += xspeed
         player_y += yspeed
-        pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),player_rad, 1)
+
+    #Checking for player Collosion with Blocks and Drawing the BLocks
+    for block in Block_array:
+        block.Draw()
+        if player_x in range(block.x - player_rad, block.x + Block_size + player_rad) and player_y in range(block.y - player_rad, block.y + Block_size  + player_rad):
+            if xspeed > 0:
+                player_x = block.x - player_rad
+            elif xspeed < 0:
+                player_x = block.x + Block_size + player_rad
+            elif yspeed > 0:
+                player_y = block.y - player_rad
+            elif yspeed < 0:
+                player_y = block.y + Block_size + player_rad
+
+    pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),player_rad, 1)
 
     ''' Managing Mouse Inputs for Sheild and Shoot '''
     mouse_pos = pygame.mouse.get_pos()
@@ -158,11 +180,11 @@ while True:
             pygame.draw.circle(Screen,green,(int(player_x),int(player_y)),sheild_rad, 1)
         elif mouse_state[0] == 1:
             #Creating Players Bullets
-            player_bullet = Bullet(player_x,player_y, mouse_x + randint(-int(0.1*mouse_x),int(0.1*mouse_x)), mouse_y + randint(-int(0.1*mouse_y),int(0.1*mouse_y)), Bullet_rad,green)
+            player_bullet = Bullet(player_x,player_y, mouse_x + randint(-abs(int(Bullet_spray*mouse_x)),abs(int(Bullet_spray*mouse_x))), mouse_y + randint(-abs(int(Bullet_spray*mouse_y)),abs(int(Bullet_spray*mouse_y))), Bullet_rad,green)
             Player_Bullet_array.append(player_bullet)
 
     ''' Creating NPCs '''
-    if len(NPC_1_array) < 2:
+    if len(NPC_1_array) < NPC_Number:
         npc_1 = NPC_1(randint(2*npc_rad, Screen_Width-2*npc_rad),randint(2*npc_rad, Screen_Height-2*npc_rad),npc_rad,('x',50),4,blue)
         NPC_1_array.append(npc_1)
 
@@ -174,7 +196,7 @@ while True:
         dy = npc_1.y - player_y
         distance_player = math.hypot(dx, dy)
         if distance_player < player_rad + npc_rad + shoot_dist:
-            bullet = Bullet(npc_1.x,npc_1.y,dx,dy,Bullet_rad,black)
+            bullet = Bullet(npc_1.x ,npc_1.y, dx + randint(-abs(int(Bullet_spray*dx)),abs(int(Bullet_spray*dx))), dy+ randint(-abs(int(Bullet_spray*dy)),abs(int(Bullet_spray*dy))), Bullet_rad,black)
             Bullet_array.append(bullet)
             npc_1.Still()
         else:
@@ -196,11 +218,6 @@ while True:
             if mouse_state[2] == 1 and distance_sheild < sheild_rad + Bullet_rad: #+ xspeed + yspeed + bullet.Velocity_x + bullet.Velocity_y:
                 Bullet_array.remove(bullet)
 
-    #Draw all of the Blocks
-    for block in Block_array:
-        block.Draw()
-
     ''' Updating Changes to the Screen '''
     pygame.display.update()
-    Screen.fill(white)
     Clock.tick(fps)
