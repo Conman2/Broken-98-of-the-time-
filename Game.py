@@ -32,22 +32,32 @@ mouse_state = (0,0,0)
 key_state = False
 Move = False
 
-#Positions and Other Variables
+#Player and NPcs Properties
 player_y = Screen_Height/2
 player_x = Screen_Width/2
 player_rad = npc_rad = 20
-shoot_dist = 150
 sheild_rad = 30
-NPC_Number = 2
-Bullet_rad = 3
-Bullet_spray = 0.5
+NPC_Number = 1
+Player_Health = 100
+Sheild_Health = 200
+NPC_Health = 100
+Sheild_Damage = 2
+
+#Bullet Properties
+Bullet_Damage = 2
+Bullet_rad = 10
+Bullet_spray = 0.3
+shoot_dist = 150
+
+#Block Properties
 Block_size = 60
-Block_number = 0
+Block_number = 10
 Block_x = [0]*Block_number
 Block_y = [0]*Block_number
 
-for i in range(0,NPC_Number)
-
+#tracker_dic = {}
+#for i in range(0,NPC_Number):
+#    tracker_dic["Tracker_array%s"% str(i)] = []
 
 ''' All the Object Classes '''
 class Bullet():
@@ -69,7 +79,7 @@ class Bullet():
         self.y += self.Velocity_y*faster
 
 class NPC_1():
-    def __init__(self,x_pos,y_pos,npc_rad,Speed,Colour):
+    def __init__(self,x_pos,y_pos,npc_rad,Speed,Colour,NPC_Health):
         self.Move = False
         self.Radius = npc_rad
         self.Colour = Colour
@@ -79,6 +89,7 @@ class NPC_1():
         self.last_seen_y = y_pos
         self.Speed = Speed
         self.Thickness = 1
+        self.Health = NPC_Health
     def Movement(self):
         self.Velocity_x = self.Speed*(-(self.x - self.last_seen_x)/(abs(self.x - self.last_seen_x)+abs(self.y - self.last_seen_y)))
         self.Velocity_y = self.Speed*(-(self.y - self.last_seen_y)/(abs(self.x - self.last_seen_x)+abs(self.y - self.last_seen_y)))
@@ -113,10 +124,11 @@ for i in range(0,Block_number):
 
 ''' Running the Game '''
 pygame.init()
+pygame.font.init()
 while True:
     ''' Creating NPCs '''
     if len(NPC_1_array) < NPC_Number:
-        npc_1 = NPC_1(randint(2*npc_rad, Screen_Width-2*npc_rad),randint(2*npc_rad, Screen_Height-2*npc_rad),npc_rad,4,blue)
+        npc_1 = NPC_1(randint(2*npc_rad, Screen_Width-2*npc_rad),randint(2*npc_rad, Screen_Height-2*npc_rad),npc_rad,4,blue,NPC_Health)
         NPC_1_array.append(npc_1)
 
     for event in pygame.event.get():
@@ -142,13 +154,22 @@ while True:
             player_y += yspeed
 
     ''' Managing Mouse Inputs '''
+    Sheild = False
     mouse_pos = pygame.mouse.get_pos()
     mouse_x = player_x - mouse_pos[0]
     mouse_y = player_y - mouse_pos[1]
 
+    #Note this is where the NPC Melee_Damage is Defined
     if mouse_state != False:
         if mouse_state[2] == 1:
-            pygame.draw.circle(Screen,green,(int(player_x),int(player_y)),sheild_rad, 1)
+            if Sheild_Health > 0:
+                pygame.draw.circle(Screen,green,(int(player_x),int(player_y)),sheild_rad, 1)
+                Sheild = True
+                Melee_Damage = 0
+            elif Sheild_Health < 0:
+                Sheilf = False
+                Melee_Damage = 30
+
         elif mouse_state[0] == 1:
             player_bullet = Bullet(player_x,player_y, mouse_x + randint(-abs(int(Bullet_spray*mouse_x)),abs(int(Bullet_spray*mouse_x))), mouse_y + randint(-abs(int(Bullet_spray*mouse_y)),abs(int(Bullet_spray*mouse_y))), Bullet_rad,green)
             Player_Bullet_array.append(player_bullet)
@@ -184,17 +205,17 @@ while True:
     ''' NPCs '''
     for npc_1 in NPC_1_array:
         #Distance from Player
-        diffx_bullets = npc_1.x - player_x
-        diffy_bullets = npc_1.y - player_y
-        distance_player = math.hypot(diffx_bullets, diffy_bullets)
+        diffx_npc = npc_1.x - player_x
+        diffy_npc = npc_1.y - player_y
+        distance_player = math.hypot(diffx_npc, diffy_npc)
 
         #Shooting the tracker_bullet
-        tracker_bullet = Bullet(npc_1.x, npc_1.y, diffx_bullets, diffy_bullets, 1, red)
+        tracker_bullet = Bullet(npc_1.x, npc_1.y, diffx_npc, diffy_npc, 1, red)
         Tracker_Bullet_array.append(tracker_bullet)
 
         #Shooting Real Bullets
         if distance_player < player_rad + npc_rad + shoot_dist:
-            npc_bullet = Bullet(npc_1.x, npc_1.y, diffx_bullets + randint(-abs(int(Bullet_spray*diffx_bullets)),abs(int(Bullet_spray*diffx_bullets))), diffy_bullets + randint(-abs(int(Bullet_spray*diffy_bullets)), abs(int(Bullet_spray*diffy_bullets))), Bullet_rad,black)
+            npc_bullet = Bullet(npc_1.x, npc_1.y, diffx_npc + randint(-abs(int(Bullet_spray*diffx_npc)),abs(int(Bullet_spray*diffx_npc))), diffy_npc + randint(-abs(int(Bullet_spray*diffy_npc)), abs(int(Bullet_spray*diffy_npc))), Bullet_rad,black)
             NPC_Bullet_array.append(npc_bullet)
 
         #Collosion with Player
@@ -246,10 +267,40 @@ while True:
             elif  npc_1.y > Screen_Height - npc_rad:
                 npc_1.y = Screen_Height - npc_rad - 1
 
+            #Collosions with Sheild
+            if mouse_state != False:
+                if mouse_state[2] == 1 and Sheild is True and distance_player < sheild_rad + npc_rad:
+                    npc_1.x = player_x + sheild_rad + npc_rad
+                    npc_1.y = player_y + sheild_rad + npc_rad
+                    Sheild_Health += -Sheild_Damage
+
+            #Collosions with Player
+            if distance_player < player_rad + npc_rad:
+                Player_Health += -Melee_Damage
+
+            #Collosions with PLayer_Bullet
+            for player_bullet in Player_Bullet_array:
+                diffx_playerbullet = player_bullet.x - npc_1.x
+                diffy_playerbullet = player_bullet.y - npc_1.y
+                distance_playerbullet = math.hypot(diffx_playerbullet,diffy_playerbullet)
+                if distance_playerbullet < npc_rad + Bullet_rad:
+                    Player_Bullet_array.remove(player_bullet)
+                    npc_1.Health += -Bullet_Damage
+
+            #Checking if the NPC should die
+            if npc_1.Health < 0:
+                NPC_1_array.remove(npc_1)
+                NPC_Number += 1
+                NPC_Health += 10
+                Player_Health += 10
+                Sheild_Health += 20
+
+            #Collosion wih each other
+
     ''' Tracker Bullet '''
     for tracker_bullet in Tracker_Bullet_array:
-        #tracker_bullet.Invisible(0.1)
-        tracker_bullet.Position()
+        tracker_bullet.Invisible(5)
+        #tracker_bullet.Position()
 
         #To check if a Bullet needs Deleting
         Tracker_Deleted = False
@@ -309,6 +360,10 @@ while True:
             if npc_bullet.x > Screen_Width or npc_bullet.x < 0 or npc_bullet.y > Screen_Height or npc_bullet.y < 0:
                 NPC_Bullet_array.remove(npc_bullet)
 
+        #Collosion with Player
+        if distance_npc_bullet < sheild_rad + Bullet_rad and NPC_Bullet_Deleted is False:
+            NPC_Bullet_array.remove(npc_bullet)
+            Player_Health += -Bullet_Damage
 
     ''' Blocks '''
     for block in Block_array:
@@ -338,8 +393,16 @@ while True:
 
 
     ''' Drawing the character '''
-    pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),player_rad, 1)
+    if Player_Health > 0:
+        pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),player_rad, 1)
+    else:
+        print(NPC_Number)
+        break
 
+    ''' Writing the Player Stats '''
+    myfont = pygame.font.SysFont('Comic Sans MS', 30)
+    textsurface = myfont.render('  Players Health: '+str(Player_Health)+'     Sheilds Health: '+str(Sheild_Health)+'     NPC Number: '+str(NPC_Number), False, black)
+    Screen.blit(textsurface,(0,0))
 
     ''' Updating Changes to the Screen '''
     pygame.display.flip()
