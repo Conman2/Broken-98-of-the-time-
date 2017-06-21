@@ -1,1 +1,3 @@
-# When you do things do things happen, are you going around the twist?
+# Reveiws 
+"The largest Python Script I've ever seen" -PoolFeast6969
+"Meh" -Everyone
