@@ -10,15 +10,12 @@ pygame.font.init()
 #NPC Collosion with the sheild
 #Bots not colliding with each other
 #Take you to a death screen where you can reatart after dieing
-#Maybe add a pause menu
 #Power up where you can sheild and shoot at the same time
 #Power up where yuo sheild does melee
+#POwer up where you can move on blocks
 #Stop blocks spawning on top of each other
-#Add a shift to dash function
-#Fix that if you click players exact center crash due to dividing by zero
-#NPCs can still morph through blocks, problem known need fix
+#NPCs can still morph through blocks, problem known need fix - The bot movement is after the collision
 #Find a prettier way to call the npcs (currently looks pretty munted)
-#Get better colours
 #try adding some basic NPC Ai for transversing blocks, eg if stuck change y velocity
 #add a new way of spawning enemies in a wave style system
 #shotgun triginometery (and maybe add 5 bullets instead of 3)
@@ -43,8 +40,9 @@ fps = 30
 
 #Initializing Variables
 lastfired_rifle = lastfired_shotgun = lastfired_smg = 0
-lastfired_freeze = -20000
 xspeed = yspeed = dx = dy = 0
+lastfired_freeze = -20000
+last_dash = 0
 Player_Bullet_array = []
 NPC_Bullet_array = []
 Block_array = []
@@ -55,6 +53,7 @@ weapon = 1
 Block_place = False
 key_state = False
 freeze = False
+dash = False
 Solid = 0
 HealthColour = white
 
@@ -62,12 +61,14 @@ HealthColour = white
 player_y = Screen_Height/2
 player_x = Screen_Width/2
 player_rad = 15
+player_speed = 8
 sheild_rad = 30
 Blocks_given = 5
 Player_Health = 100
 Sheild_Health = 100
 Diagonal_Speed = 0.7
 Start_time = 15000
+dash_time = 500
 
 #Block Properties
 Block_size = 40
@@ -79,15 +80,15 @@ npc1 = {'Radius': 15, 'Speed': 6, 'Colour': blue, 'Health': 100, 'Bullet_Damage'
 npc2 = {'Radius': 10, 'Speed': 10, 'Colour': grey, 'Health': 15, 'Bullet_Damage': 5, 'Sheild_Damage': 15, 'Bullet_rate':4, 'Shoot_range':30, 'Bullet_Speed':6, 'Bullet_Spray':1.5, 'Melee_Damage':10, 'Block_Damage':0.5} #Sheild Breaker
 npc3 = {'Radius': 19, 'Speed': 4, 'Colour': magenta, 'Health': 300, 'Bullet_Damage': 7, 'Sheild_Damage': 2, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':6, 'Bullet_Spray':0.3, 'Melee_Damage':2, 'Block_Damage':0.5} #Doc
 npc4 = {'Radius': 10, 'Speed': 3, 'Colour': green, 'Health': 200, 'Bullet_Damage': 35, 'Sheild_Damage': 2, 'Bullet_rate':30, 'Shoot_range':800, 'Bullet_Speed':20, 'Bullet_Spray':0, 'Melee_Damage':2, 'Block_Damage':0.5} #Sniper
-npc5 = {'Radius': 15, 'Speed': 3, 'Colour': grey, 'Health': 100, 'Bullet_Damage': 2, 'Sheild_Damage': 1, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':8, 'Bullet_Spray':0.5, 'Melee_Damage':2, 'Block_Damage':2} #Block Breaker
+npc5 = {'Radius': 15, 'Speed': 3, 'Colour': yellow, 'Health': 100, 'Bullet_Damage': 2, 'Sheild_Damage': 1, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':8, 'Bullet_Spray':0.5, 'Melee_Damage':2, 'Block_Damage':2} #Block Breaker
 
 #Bullet Properties
 Bullet_rad = 5
-Shotgun_Spread_ang = 20
-Freeze_Space = 15000
 Exist_time = 10000
-weapon1 = {'Damage':5, 'Speed':8, 'Spray':0.2, 'FireRate':750} #Default
-weapon2 = {'Damage':100, 'Speed':30, 'Spray':0.01, 'FireRate':1000} #High Power, Low Fire Rate
+Freeze_Space = 15000
+Shotgun_Spread_ang = 0.1
+weapon1 = {'Damage':5, 'Speed':8, 'Spray':0.2, 'FireRate':50} #SMG
+weapon2 = {'Damage':100, 'Speed':25, 'Spray':0.01, 'FireRate':1000} #High Power, Low Fire Rate
 weapon3 = {'Damage':30, 'Speed':15, 'Spray':0.2, 'FireRate':1000} #Shotgun
 weapon4 = {'Damage':0, 'Speed':0, 'Spray':0, 'FireRate':30000}#Freeze Gun
 
@@ -124,24 +125,24 @@ class NPC_1():
         pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Radius, 2)
     def Still(self):
         pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Radius, Solid)
-        pygame.draw.cricle(Screen, black, (int(self.x), int(self.y)), self.Radius, 2)
+        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Radius, 2)
 
 class Bullet():
-    def __init__(self,x_npc,y_npc,dx,dy,Bullet_rad,Colour,Speed,Damage,Exist_time):
+    def __init__(self,x_npc,y_npc,dx,dy,Bullet_rad,Colour,Speed,Damage,Exist_time,xspeed,yspeed):
         self.Bullet_rad = Bullet_rad
         self.x = x_npc
         self.y = y_npc
         self.Speed = Speed
         self.Colour = Colour
         self.Damage = Damage
-        self.Velocity_x = self.Speed*(-dx/(abs(dx)+abs(dy)))
-        self.Velocity_y = self.Speed*(-dy/(abs(dx)+abs(dy)))
+        self.Velocity_x = self.Speed*(-dx/(abs(dx)+abs(dy))) + xspeed/(xspeed + yspeed + 1)
+        self.Velocity_y = self.Speed*(-dy/(abs(dx)+abs(dy))) + yspeed/(xspeed + yspeed + 1)
         self.Exist_time = Exist_time
     def Position(self):
         self.x += self.Velocity_x
         self.y += self.Velocity_y
         pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Bullet_rad, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Bullet_rad, 1)
+        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Bullet_rad, 2)
 
 class Block():
     def __init__(self,x_pos,y_pos,Block_size):
@@ -191,8 +192,6 @@ def BallCollosion(Radius1,Radius2,x1,y1,x2,y2):
 ''' Generating the Block Spawns '''
 X_range = range(0, Screen_Width, Block_size)
 Y_range = range(0, Screen_Height, Block_size)
-
-#Creating the Spawn Locations in an Array
 for i in range(0,Block_number):
     X_value = choice(X_range)
     Y_value = choice(Y_range)
@@ -204,19 +203,18 @@ end_the_start = False
 while end_the_start is False:
     Screen.fill(white)
     myfont = pygame.font.SysFont("Britannic Bold", 40)
-    nlabel = myfont.render("WASD and 123 does stuff and All Mouse Buttons do Things", 1, (255, 0, 0))
+    nlabel = myfont.render("WASD and 1234 does stuff and All Mouse Buttons do Things", 1, (255, 0, 0))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             quit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             end_the_start=True
-    Screen.blit(nlabel,(60,Screen_Height/2))
+    Screen.blit(nlabel,(50,Screen_Height/2))
     pygame.display.flip()
 
 ''' Running the Game '''
 while True:
-    #Used for tracking the loop (Used for Limiting Bullets of NPC)
     counter += 1
     if counter > fps + 1:
         counter = 1
@@ -224,8 +222,8 @@ while True:
     if pygame.time.get_ticks() - lastfired_freeze > Freeze_Space:
         freeze = False
 
-    #if pygame.time.get_ticks() - lastdash > Dash_Space
-    #    dash = False
+    if pygame.time.get_ticks() - last_dash > dash_time:
+        dash = False
 
     ''' Creating NPCs '''
     if len(NPC_1_array) < NPC_Number and pygame.time.get_ticks() > Start_time:
@@ -244,10 +242,10 @@ while True:
         elif NPC_Number%3 == 0:
             npc_1 = NPC_1(x,y,npc3['Radius'],npc3['Speed'],npc3['Colour'],npc3['Health'],npc3['Bullet_rate'],3,npc3['Shoot_range'],npc3['Radius'],npc3['Sheild_Damage'],npc3['Melee_Damage'],npc3['Bullet_Speed'],npc3['Bullet_Damage'],npc3['Bullet_Spray'],npc3['Block_Damage'])
             NPC_1_array.append(npc_1)
-        elif NPC_Number%7.5 == 0:
+        elif NPC_Number%4 == 0:
             npc_1 = NPC_1(x,y,npc4['Radius'],npc4['Speed'],npc4['Colour'],npc4['Health'],npc4['Bullet_rate'],4,npc4['Shoot_range'],npc4['Radius'],npc4['Sheild_Damage'],npc4['Melee_Damage'],npc4['Bullet_Speed'],npc4['Bullet_Damage'],npc4['Bullet_Spray'],npc4['Block_Damage'])
             NPC_1_array.append(npc_1)
-        elif NPC_Number%4.5 == 0:
+        elif NPC_Number%5 == 0:
             npc_1 = NPC_1(x,y,npc5['Radius'],npc5['Speed'],npc5['Colour'],npc5['Health'],npc5['Bullet_rate'],5,npc5['Shoot_range'],npc5['Radius'],npc5['Sheild_Damage'],npc5['Melee_Damage'],npc5['Bullet_Speed'],npc5['Bullet_Damage'],npc5['Bullet_Spray'],npc5['Block_Damage'])
             NPC_1_array.append(npc_1)
         else:
@@ -269,27 +267,37 @@ while True:
                 weapon = 3
             if event.key == pygame.K_4:
                 weapon = 4
+
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                dash == True
+            if event.key == pygame.K_LSHIFT:
+                last_dash = pygame.time.get_ticks()
+                dash = True
+                xspeed = 4*player_speed*(-mouse_x/(abs(mouse_x)+abs(mouse_y)))
+                yspeed = 4*player_speed*(-mouse_y/(abs(mouse_x)+abs(mouse_y)))
 
         if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
             key_state = pygame.key.get_pressed()
+
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
             mouse_state = pygame.mouse.get_pressed()
+
         if event.type == pygame.MOUSEBUTTONUP:
             Block_place = False
 
     ''' Managing Key Inputs '''
-    if key_state != False:
-        xspeed = 6*(key_state[100] - key_state[97])
-        yspeed = 6*(key_state[115] - key_state[119])
-        if abs(xspeed) == abs(yspeed):
-            player_x += xspeed*Diagonal_Speed
-            player_y += yspeed*Diagonal_Speed
-        else:
-            player_x += xspeed
-            player_y += yspeed
+    if dash is False:
+        if key_state != False:
+            xspeed = player_speed*(key_state[100] - key_state[97])
+            yspeed = player_speed*(key_state[115] - key_state[119])
+            if abs(xspeed) == abs(yspeed):
+                player_x += xspeed*Diagonal_Speed
+                player_y += yspeed*Diagonal_Speed
+            else:
+                player_x += xspeed
+                player_y += yspeed
+    elif dash is True:
+        player_x += xspeed
+        player_y += yspeed
 
     ''' Managing Mouse Inputs '''
     Sheild = False
@@ -308,27 +316,28 @@ while True:
                 Sheilf = False
                 Melee_Damage = 30
 
-        elif mouse_state[0] == 1:
+        elif mouse_state[0] == 1 and mouse_x != 0 and mouse_y != 0:
             #Default Weapon
             if weapon == 1:
                 if pygame.time.get_ticks() - lastfired_smg > weapon1['FireRate']:
-                    player_bullet = Bullet(player_x, player_y, mouse_x + randint(-abs(int(weapon1['Spray']*mouse_x)),abs(int(weapon1['Spray']*mouse_x))), mouse_y + randint(-abs(int(weapon1['Spray']*mouse_y)),abs(int(weapon1['Spray']*mouse_y))), Bullet_rad, green, weapon1['Speed'], weapon1['Damage'], pygame.time.get_ticks())
+                    lastfired_smg = pygame.time.get_ticks()
+                    player_bullet = Bullet(player_x, player_y, mouse_x + randint(-abs(int(weapon1['Spray']*mouse_x)),abs(int(weapon1['Spray']*mouse_x))), mouse_y + randint(-abs(int(weapon1['Spray']*mouse_y)),abs(int(weapon1['Spray']*mouse_y))), Bullet_rad, green, weapon1['Speed'], weapon1['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
                     Player_Bullet_array.append(player_bullet)
             #High Power, Low Fire Rate
             if weapon == 2:
                 if pygame.time.get_ticks() - lastfired_rifle > weapon2['FireRate']:
                     lastfired_rifle = pygame.time.get_ticks()
-                    player_bullet = Bullet(player_x, player_y, mouse_x + randint(-abs(int(weapon2['Spray']*mouse_x)),abs(int(weapon2['Spray']*mouse_x))), mouse_y + randint(-abs(int(weapon2['Spray']*mouse_y)),abs(int(weapon2['Spray']*mouse_y))), Bullet_rad, green, weapon2['Speed'], weapon2['Damage'], pygame.time.get_ticks())
+                    player_bullet = Bullet(player_x, player_y, mouse_x + randint(-abs(int(weapon2['Spray']*mouse_x)),abs(int(weapon2['Spray']*mouse_x))), mouse_y + randint(-abs(int(weapon2['Spray']*mouse_y)),abs(int(weapon2['Spray']*mouse_y))), Bullet_rad, green, weapon2['Speed'], weapon2['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
                     Player_Bullet_array.append(player_bullet)
             #Shootgun
             if weapon == 3:
                 if pygame.time.get_ticks() - lastfired_shotgun > weapon3['FireRate']:
                     lastfired_shotgun = pygame.time.get_ticks()
-                    player_bullet = Bullet(player_x, player_y, mouse_x, mouse_y, Bullet_rad, green, weapon3['Speed'], weapon3['Damage'],pygame.time.get_ticks())
+                    player_bullet = Bullet(player_x, player_y, mouse_x, mouse_y, Bullet_rad, green, weapon3['Speed'], weapon3['Damage'],pygame.time.get_ticks(), xspeed, yspeed)
                     Player_Bullet_array.append(player_bullet)
-                    player_bullet = Bullet(player_x, player_y, mouse_x - mouse_y*math.cos(math.radians(Shotgun_Spread_ang)), mouse_y - mouse_x*math.sin(math.radians(Shotgun_Spread_ang)), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks())
+                    player_bullet = Bullet(player_x, player_y, mouse_x - abs(mouse_y*Shotgun_Spread_ang), mouse_y - abs(mouse_x*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
                     Player_Bullet_array.append(player_bullet)
-                    player_bullet = Bullet(player_x, player_y, mouse_x + mouse_y*math.sin(math.radians(Shotgun_Spread_ang)), mouse_y + mouse_x*math.sin(math.radians(Shotgun_Spread_ang)), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks())
+                    player_bullet = Bullet(player_x, player_y, mouse_x + abs(mouse_y*Shotgun_Spread_ang), mouse_y + abs(mouse_x*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
                     Player_Bullet_array.append(player_bullet)
             #Freeze
             if weapon == 4:
@@ -338,14 +347,21 @@ while True:
 
     ''' Placing Blocks '''
     if mouse_state[1] == 1 and Blocks_given > 0 and Block_place is False:
-        mouse_pos[0]
-        mouse_pos[1]
         for thing1 in X_range:
             if mouse_pos[0] > thing1:
                 Block_x = thing1
+
         for thing2 in Y_range:
             if mouse_pos[1] > thing2:
                 Block_y = thing2
+
+        for npc_1 in NPC_1_array:
+            if Block_x < npc_1.x< Block_x + Block_size and Block_y < npc_1.y < Block_y + Block_size :
+                NPC_1_array.remove(npc_1)
+                NPC_Number += 1
+                Player_Health += 10
+                Sheild_Health += 10
+
         block = Block(Block_x, Block_y, Block_size)
         Block_array.append(block)
         Block_place = True
@@ -414,14 +430,12 @@ while True:
             if BallCollosion(player_rad, npc_1.Shoot_dist, npc_1.x, npc_1.y, player_x, player_y) is True and counter%npc_1.Shoot_rate == 0:
                 diffx_npc = npc_1.x - player_x
                 diffy_npc = npc_1.y - player_y
-                npc_bullet = Bullet(npc_1.x, npc_1.y, diffx_npc + randint(-abs(int(npc_1.Bullet_spray*diffx_npc)),abs(int(npc_1.Bullet_spray*diffx_npc))), diffy_npc + randint(-abs(int(npc_1.Bullet_spray*diffy_npc)), abs(int(npc_1.Bullet_spray*diffy_npc))), 5, black, npc_1.Bullet_speed, npc_1.Bullet_Damage, pygame.time.get_ticks())
+                npc_bullet = Bullet(npc_1.x, npc_1.y, diffx_npc + randint(-abs(int(npc_1.Bullet_spray*diffx_npc)),abs(int(npc_1.Bullet_spray*diffx_npc))), diffy_npc + randint(-abs(int(npc_1.Bullet_spray*diffy_npc)), abs(int(npc_1.Bullet_spray*diffy_npc))), 5, black, npc_1.Bullet_speed, npc_1.Bullet_Damage, pygame.time.get_ticks(), 0, 0)
                 NPC_Bullet_array.append(npc_bullet)
 
             #Collosions with Sheild
             if mouse_state != False:
                 if mouse_state[2] == 1 and Sheild is True and BallCollosion(sheild_rad, npc_1.Radius, npc_1.x, npc_1.y, player_x, player_y) is True:
-                    #npc_1.x = player_x + sheild_rad + npc_1.Radius
-                    #npc_1.y = player_y + sheild_rad + npc_1.Radius
                     inside_x = -player_x + sheild_rad + npc_1.x - npc_1.Radius
                     inside_y = -player_y + sheild_rad + npc_1.y - npc_1.Radius
                     npc_1.x += inside_x
@@ -435,9 +449,7 @@ while True:
             #Collosions with Blocks
             for block in Block_array:
                 npc_1.x, npc_1.y, npc_1.Velocity_x, npc_1.Velocity_y, Hit = Collosion(Block_size, npc_1.Radius, npc_1.x, npc_1.y, block.x, block.y, npc_1.Velocity_x, npc_1.Velocity_y)
-                print(Hit)
                 if Hit is True and npc_1.Velocity_x == 0 and npc_1.Velocity_y == 0:
-                    print('still')
                     npc_1.Velocity_x += npc_1.Speed
 
             npc_1.Movement()
