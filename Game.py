@@ -10,18 +10,17 @@ pygame.font.init()
 #NPC Collosion with the sheild
 #Bots not colliding with each other
 #Take you to a death screen where you can reatart after dieing
-#Power up where yuo sheild does melee
 #POwer up where you can move on blocks
-#NPCs can still morph through blocks, problem known need fix - The bot movement is after the collision
-#try adding some basic NPC Ai for transversing blocks, eg if stuck change y velocity
+#NPCs can still morph through blocks, problem known need fix - The bot movement is after the collision todo witrh the movement occuring after the block thing occurs
 #add a new way of spawning enemies in a wave style system
 #shotgun triginometery
 #friction for the dash function
 #Multiplayer
 #Create big map with following camera (and spawn structers and stuff)
-#powerups lasting longer than they should
-#Adding a timer for the freezeray cooldown
 #Balancing the wepaons
+#powerup 2 doesn't work during freezing
+#stop bots spawning where the player does
+#Sheild collision with the blocks (currently most bugged thing in the game, and thats saying something!!!)
 
 ''' Variable Managment '''
 #Colour libary
@@ -37,38 +36,23 @@ orange = (255,69,0)
 white = (255,255,255)
 
 #Setting up Pygame
-(Screen_Width,Screen_Height) = (920,720) #Note this Both need to be Multiples of 60
+(Screen_Width,Screen_Height) = (1000,760) #Note this Both need to be Multiples of 60
 Screen = pygame.display.set_mode((Screen_Width, Screen_Height))
 Clock = pygame.time.Clock()
 fps = 30
 
 #Initializing Variables
-lastfired_rifle = lastfired_shotgun = lastfired_smg = 0
-xspeed = yspeed = dx = dy = 0
+Block_place = key_state = freeze = dash = Overlap = Conflict = Sheild_Shoot = powerup_active1 = powerup_active2 = powerup_active3 = False
+lastfired_rifle = lastfired_shotgun = lastfired_smg = xspeed = yspeed = dx = dy = last_dash = Solid = last_powerup = 0
+counter = weapon = last_weapon = 1
 lastfired_freeze = -20000
-last_dash = 0
 Player_Bullet_array = []
 NPC_Bullet_array = []
+Powerup_array = []
 Block_array = []
 NPC_1_array = []
-Powerup_array = []
 mouse_state = (0,0,0)
-counter = 1
-weapon = 1
-Block_place = False
-key_state = False
-freeze = False
-dash = False
-Overlap = False
-Conflict = False
-Sheild_Shoot = False
-Solid = 0
 HealthColour = white
-
-last_powerup = 0
-powerup_active = False
-powerup_extent = 10000
-powerup_spacing = 30000
 
 #Player Properties
 player_y = Screen_Height/2
@@ -106,8 +90,11 @@ weapon3 = {'Damage':20, 'Speed':15, 'Spray':0.2, 'FireRate':1000} #Shotgun
 weapon4 = {'Damage':0, 'Speed':0, 'Spray':0, 'FireRate':30000}#Freeze Gun
 
 #Power Ups
+powerup_extent = 10000
+powerup_spacing = 30000
+powerup_sheild_melee = 30
 power1 = {'Colour':orange, 'Size':7, 'Active':False, 'Draw':False}#Sheild and Shoot
-power2 = {'Colour':yellow, 'Size':7, 'Active':False, 'Draw':False}
+power2 = {'Colour':yellow, 'Size':7, 'Active':False, 'Draw':False}#Sheild Melee
 power3 = {'Colour':blue, 'Size':7, 'Active':False,' Draw':False}
 
 ''' Object Classes '''
@@ -301,10 +288,13 @@ while True:
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_1:
                 weapon = 1
+                last_weapon = 1
             if event.key == pygame.K_2:
                 weapon = 2
+                last_weapon = 2
             if event.key == pygame.K_3:
                 weapon = 3
+                last_weapon = 3
             if event.key == pygame.K_4:
                 weapon = 4
 
@@ -349,20 +339,24 @@ while True:
     if mouse_state != False:
         if mouse_state[2] == 1:
             if Sheild_Health > 0:
-                pygame.draw.circle(Screen,green,(int(player_x),int(player_y)),sheild_rad, 1)
+                if powerup_active2 is False:
+                    pygame.draw.circle(Screen,green,(int(player_x),int(player_y)),sheild_rad, 3)
+                else:
+                    pygame.draw.circle(Screen,pink,(int(player_x),int(player_y)),sheild_rad, 2)
+                    pygame.draw.circle(Screen,orange,(int(player_x),int(player_y)),sheild_rad+3, 2)
+                    pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),sheild_rad+3, 2)
                 Sheild = True
                 Melee_Damage = 0
             elif Sheild_Health < 0:
                 Sheild = False
                 Melee_Damage = 30
 
-        for powerup in Powerup_array:
-            if powerup_active is True:
-                Sheild_Shoot = False
-            elif Sheild is True:
-                Sheild_Shoot = True
-            elif Sheild is False:
-                Sheild_Shoot = False
+        if Sheild is True:
+            Sheild_Shoot = True
+        elif Sheild is False:
+            Sheild_Shoot = False
+        if powerup_active1 is True:
+            Sheild_Shoot = False
 
         if mouse_state[0] == 1 and mouse_x != 0 and mouse_y != 0 and Sheild_Shoot is False:
             #SMG
@@ -396,6 +390,7 @@ while True:
                 if pygame.time.get_ticks() - lastfired_freeze > weapon4['FireRate']:
                     lastfired_freeze = pygame.time.get_ticks()
                     freeze = True
+                    weapon = last_weapon
 
     ''' Placing Blocks '''
     if mouse_state[1] == 1 and Blocks_given > 0 and Block_place is False:
@@ -489,36 +484,24 @@ while True:
                     inside_y = -player_y + sheild_rad + npc_1.y - npc_1.Radius
                     npc_1.x += inside_x
                     npc_1.y += inside_y
-                    Sheild_Health += -npc_1.Sheild_Damage
+                    if powerup_active2 is False:
+                        Sheild_Health += -npc_1.Sheild_Damage
+                    else:
+                        npc_1.Health += -powerup_sheild_melee
 
             if BallCollosion(player_rad, npc_1.Radius, npc_1.x-5, npc_1.y-10, player_x, player_y) is True:
                 Player_Health += -npc_1.Melee_Damage
 
             for block in Block_array:
                 npc_1.x, npc_1.y, npc_1.Velocity_x, npc_1.Velocity_y = Collosion(Block_size, npc_1.Radius, npc_1.x, npc_1.y, block.x, block.y, npc_1.Velocity_x, npc_1.Velocity_y)
-            '''
-            print(Dodge)
-            if npc_1.Velocity_x + orginalx == 0:
-                npc_1.Velocity_y = npc_1.Speed
-                Dodge = True
-                print('x')
-            if npc_1.Velocity_y + orginaly == 0:
-                npc_1.Velocity_x = npc_1.Speed
-                Dodge = True
-                print('y')
-            print(Dodge)
 
-            if Dodge is True:
-                npc_1.Dodge()
-            else:
-                '''
             npc_1.Movement()
         else:
             npc_1.Still()
 
         myfont = pygame.font.SysFont('Comic Sans MS', 10)
         textsurface = myfont.render(str(npc_1.Health), False, HealthColour)
-        Screen.blit(textsurface,(npc_1.x-5, npc_1.y))
+        Screen.blit(textsurface,(npc_1.x-10, npc_1.y-5))
 
         #Collosions with PLayer_Bullet
         for player_bullet in Player_Bullet_array:
@@ -548,11 +531,13 @@ while True:
 
     ''' Power Ups '''
     if pygame.time.get_ticks() - last_powerup > powerup_extent:
-        powerup_active = False
+        powerup_active1 = False
+        powerup_active2 = False
+        powerup_active3 = False
 
-    if powerup_active == False and pygame.time.get_ticks() - last_powerup > powerup_spacing and len(Powerup_array) == 0:
+    if powerup_active1 is False and powerup_active2 is False and powerup_active3 is False and pygame.time.get_ticks() - last_powerup > powerup_spacing and len(Powerup_array) == 0:
         pickone = randint(1,3)
-        pickone = 1
+        pickone = 2
         if pickone == 1:
             powerup = Powerup(power1['Size'], power1['Colour'], 1)
             Powerup_array.append(powerup)
@@ -567,17 +552,17 @@ while True:
         powerup.Draw()
         if powerup.type == 1:
             if player_x - player_rad < powerup.x < player_x + player_rad and player_y - player_rad < powerup.y < player_y + player_rad:
-                powerup_active = True
+                powerup_active1 = True
                 last_powerup = pygame.time.get_ticks()
                 Powerup_array.remove(powerup)
         elif powerup.type == 2:
             if player_x - player_rad < powerup.x < player_x + player_rad and player_y - player_rad < powerup.y < player_y + player_rad:
-                powerup_active = True
+                powerup_active2 = True
                 last_powerup = pygame.time.get_ticks()
                 Powerup_array.remove(powerup)
         elif powerup.type == 3:
             if player_x - player_rad < powerup.x < player_x + player_rad and player_y - player_rad < powerup.y < player_y + player_rad:
-                powerup_active = True
+                powerup_active3 = True
                 last_powerup = pygame.time.get_ticks()
                 Powerup_array.remove(powerup)
 
@@ -600,8 +585,13 @@ while True:
         break
 
     ''' Writing the Stats '''
+    if weapon4['FireRate'] - pygame.time.get_ticks() + lastfired_freeze > 0:
+        freeze_left = int((weapon4['FireRate'] - pygame.time.get_ticks() + lastfired_freeze)/1000)
+    else:
+        freeze_left = 0
+
     myfont = pygame.font.SysFont('Comic Sans MS', 25)
-    textsurface = myfont.render('  Players Health:'+str(Player_Health)+'   Sheilds Health:'+str(Sheild_Health)+'   NPC Number:'+str(len(NPC_1_array))+'   Blocks Available:'+str(Blocks_given), False, black)
+    textsurface = myfont.render(' Players Health:'+str(Player_Health)+'  Sheilds Health:'+str(Sheild_Health)+'  NPC Number:'+str(len(NPC_1_array))+'  Blocks Available:'+str(Blocks_given)+'  Freeze:'+str(freeze_left), False, black)
     Screen.blit(textsurface,(0,0))
 
     ''' Updating Changes to the Screen '''
