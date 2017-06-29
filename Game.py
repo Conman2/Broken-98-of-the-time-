@@ -19,22 +19,27 @@ pygame.font.init()
 #Add different levels of Turrets
 #enemy with homing bullets
 #a function for picking available x and y positions
-#make it so you have to win each weapon
 #all circle on circle collisions
+#Finish the shop and add new items
+#Draw the weapons
+#Make the money move towards the player (Just looks cool) Note probs use a 1/x^2 graph (eg. moves faster the closer it gets)
 
 ''' Variable Managment '''
 #Initializing Variables
-turret_time = battle_moon_level = lastfired_rifle = lastfired_shotgun = lastfired_smg = xspeed = yspeed = dx = dy = last_dash = Solid = last_powerup = angle = 0
-battle_moon = Block_place = Turret_place = key_state = freeze = dash = Overlap = Conflict = Sheild_Shoot = powerup_active1 = powerup_active2 = False
+Player_money = turret_time = battle_moon_level = lastfired_rifle = lastfired_shotgun = lastfired_smg = xspeed = yspeed = dx = dy = last_dash = Solid = last_powerup = angle = 0
+weapon2exist = weapon3exist = battle_moon = Block_place = Turret_place = key_state = freeze = dash = Overlap = Conflict = Sheild_Shoot = powerup_active1 = powerup_active2 = False
 counter = weapon = last_weapon = 1
 lastfired_freeze = -30000
+mouse_state = (0,0,0)
+mouse_pos = (1,1)
 Player_Bullet_array = []
 NPC_Bullet_array = []
 Powerup_array = []
+Turret_array = []
 Block_array = []
 NPC_1_array = []
-Turret_array = []
-mouse_state = (0,0,0)
+Money_array = []
+Shop_array = []
 
 #Colour libary
 black = (0,0,0)
@@ -79,7 +84,7 @@ HealthColour = white
 npc1 = {'Radius': 15, 'Speed': 6, 'Colour': blue, 'Health': 100, 'Bullet_Damage': 5, 'Sheild_Damage': 1, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':8, 'Bullet_Spray':0.5, 'Melee_Damage':2, 'Block_Damage':0.1} #Default
 npc2 = {'Radius': 10, 'Speed': 10, 'Colour': grey, 'Health': 15, 'Bullet_Damage': 5, 'Sheild_Damage': 15, 'Bullet_rate':4, 'Shoot_range':30, 'Bullet_Speed':6, 'Bullet_Spray':1.5, 'Melee_Damage':10, 'Block_Damage':0.2} #Sheild Breaker
 npc3 = {'Radius': 19, 'Speed': 4, 'Colour': magenta, 'Health': 300, 'Bullet_Damage': 7, 'Sheild_Damage': 2, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':6, 'Bullet_Spray':0.3, 'Melee_Damage':2, 'Block_Damage':0.2} #Doc
-npc4 = {'Radius': 10, 'Speed': 3, 'Colour': green, 'Health': 200, 'Bullet_Damage': 35, 'Sheild_Damage': 2, 'Bullet_rate':30, 'Shoot_range':800, 'Bullet_Speed':15, 'Bullet_Spray':0, 'Melee_Damage':2, 'Block_Damage':0.2} #Sniper
+npc4 = {'Radius': 10, 'Speed': 3, 'Colour': green, 'Health': 200, 'Bullet_Damage': 20, 'Sheild_Damage': 2, 'Bullet_rate':30, 'Shoot_range':800, 'Bullet_Speed':15, 'Bullet_Spray':0, 'Melee_Damage':2, 'Block_Damage':0.2} #Sniper
 npc5 = {'Radius': 15, 'Speed': 3, 'Colour': yellow, 'Health': 100, 'Bullet_Damage': 2, 'Sheild_Damage': 1, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':8, 'Bullet_Spray':0.5, 'Melee_Damage':2, 'Block_Damage':3} #Block Breaker
 
 #Bullet Properties
@@ -161,6 +166,7 @@ class Objects():
         self.Health = 100
         self.range = 400
         self.shootrate = 10
+        self.Value = 10
     def Block(self):
         pygame.draw.rect(Screen, self.colour, (self.x, self.y, self.Size, self.Size), Solid)
         pygame.draw.rect(Screen, black, (self.x, self.y, self.Size, self.Size), 2)
@@ -170,6 +176,9 @@ class Objects():
     def Turret(self):
         pygame.draw.circle(Screen, self.colour, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, Solid)
         pygame.draw.circle(Screen, black, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, 2)
+    def Money(self):
+        pygame.draw.circle(Screen, self.colour, (int(self.x), int(self.y)), self.Size, Solid)
+        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Size, 2)
 
 ''' Collosions '''
 def Collosion(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
@@ -214,21 +223,6 @@ for i in range(0,Block_number):
             Block_array.append(block)
             break
 
-''' Start Screen '''
-end_the_start = False
-while end_the_start is False:
-    Screen.fill(white)
-    myfont = pygame.font.SysFont("Britannic Bold", 40)
-    nlabel = myfont.render("WASD and 1234 does stuff and All Mouse Buttons do Things", 1, (255, 0, 0))
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            quit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            end_the_start=True
-    Screen.blit(nlabel,(50,Screen_Height/2))
-    pygame.display.flip()
-
 ''' Running the Game '''
 while True:
     counter += 1
@@ -243,10 +237,15 @@ while True:
 
     if NPC_Number%5 == 0:
         Start_time = pygame.time.get_ticks() + 60000
-
-    if pygame.time.get_ticks() - turret_time > 70000:
-        Turret_given += 1
-        turret_time = pygame.time.get_ticks()
+        if len(Shop_array) < 1:
+            while True:
+                X_value = choice(X_range)
+                Y_value = choice(Y_range)
+                if positions[int(X_value/Block_size)][int(Y_value/Block_size)] == 0:
+                    positions[int(X_value/Block_size)][int(Y_value/Block_size)] = 1
+                    shop = Objects(X_value, Y_value, Block_size, 0, blue)
+                    Shop_array.append(shop)
+                    break
 
     ''' Creating NPCs '''
     if len(NPC_1_array) < NPC_Number and pygame.time.get_ticks() > Start_time:
@@ -284,9 +283,9 @@ while True:
             key_state = pygame.key.get_pressed()
             if event.key == pygame.K_1:
                 weapon = last_weapon = 1
-            elif event.key == pygame.K_2:
+            elif event.key == pygame.K_2 and weapon2exist is True:
                 weapon = last_weapon = 2
-            elif event.key == pygame.K_3:
+            elif event.key == pygame.K_3 and weapon3exist is True:
                 weapon = last_weapon = 3
             elif event.key == pygame.K_4 and Blocks_given > 0:
                 weapon = 4
@@ -446,11 +445,13 @@ while True:
 
         #Checking if the NPC should die
         if npc_1.Health <= 0:
-            NPC_1_array.remove(npc_1)
+            money = Objects(npc_1.x, npc_1.y, 5, 0, yellow)
+            Money_array.append(money)
             NPC_Number += 1
             Player_Health += 10
             Sheild_Health += 10
             Blocks_given += 1
+            NPC_1_array.remove(npc_1)
 
     ''' Power Ups '''
     if pygame.time.get_ticks() - last_powerup > powerup_extent:
@@ -466,7 +467,7 @@ while True:
 
         pickone = randint(1,3)
         if pickone == 1:
-            powerup = Objects(power_x, power_y, power1['Size'], 1, yellow)
+            powerup = Objects(power_x, power_y, power1['Size'], 1, red)
             Powerup_array.append(powerup)
         if pickone == 2:
             powerup = Objects(power_x, power_y, power2['Size'], 2, orange)
@@ -605,6 +606,81 @@ while True:
         else:
             player_x, player_y, xspeed, yspeed, NaN = Collosion(Block_size, player_rad, player_x, player_y, block.x, block.y, xspeed, yspeed)
 
+    ''' Money '''
+    for money in Money_array:
+        money.Money()
+        if BallCollosion(money.Size, player_rad, player_x, player_y, money.x, money.y) is True:
+            Player_money += money.Value
+            Money_array.remove(money)
+
+    ''' Shop '''
+    for shop in Shop_array:
+        shop.Block()
+        player_x, player_y, NaN, NaN, Shopping = Collosion(Block_size, player_rad, player_x, player_y, shop.x, shop.y, xspeed, yspeed)
+        if Shopping is True:
+            end_shop = False
+            while end_shop is False:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        quit()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            Shop_array.remove(shop)
+                            end_shop = True
+                    if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
+                        mouse_state = pygame.mouse.get_pressed()
+                        bought = False
+
+                myfont = pygame.font.SysFont('Comic Sans MS', 25)
+                text = myfont.render('  Money:$'+str(Player_money)+'   Players Health:'+str(Player_Health)+'  Sheilds Health:'+str(Sheild_Health)+'  Turrets Available:'+str(Turret_given)+'  Rifle Available:'+str(weapon2exist)+'  Shotgun Available:'+str(weapon3exist), False, black)
+                Screen.blit(text,(0,0))
+
+                mouse_pos = pygame.mouse.get_pos()
+                pygame.draw.rect(Screen, red, (60, 60, 120, 120), Solid)
+                pygame.draw.rect(Screen, black, (60, 60, 120, 120), 2)
+                text = myfont.render('  Rifle', False, black)
+                Screen.blit(text,(60,60))
+                pygame.draw.rect(Screen, yellow, (240, 60, 120, 120), Solid)
+                pygame.draw.rect(Screen, black, (240, 60, 120, 120), 2)
+                text = myfont.render('  Shotgun', False, black)
+                Screen.blit(text,(240,60))
+                pygame.draw.rect(Screen, pink, (420, 60, 120, 120), Solid)
+                pygame.draw.rect(Screen, black, (420, 60, 120, 120), 2)
+                text = myfont.render('  Turrets', False, black)
+                Screen.blit(text,(420,60))
+                pygame.draw.rect(Screen, green, (600, 60, 120, 120), Solid)
+                pygame.draw.rect(Screen, black, (600, 60, 120, 120), 2)
+                text = myfont.render('  Health', False, black)
+                Screen.blit(text,(600,60))
+                pygame.draw.rect(Screen, magenta, (780, 60, 120, 120), Solid)
+                pygame.draw.rect(Screen, black, (780, 60, 120, 120), 2)
+                text = myfont.render('  Sheild', False, black)
+                Screen.blit(text,(780,60))
+
+                if 60 < mouse_pos[0] < 180 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and weapon2exist is False and bought is False :
+                    Player_money += -10
+                    bought = weapon2exist = True
+                elif 240 < mouse_pos[0] < 360 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and weapon3exist is False and bought is False:
+                    Player_money += -10
+                    bought = weapon3exist = True
+                elif 420 < mouse_pos[0] < 540 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and bought is False:
+                    Player_money += -10
+                    Turret_given += 1
+                    bought = True
+                elif 600 < mouse_pos[0] < 720 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and weapon3exist is False and bought is False:
+                    Player_money += -10
+                    Player_Health += 10
+                    bought  = True
+                elif 780 < mouse_pos[0] < 900 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and bought is False:
+                    Player_money += -10
+                    Sheild_Health += 10
+                    bought = True
+
+                pygame.display.flip()
+                pygame.display.set_caption('The Shop')
+                Screen.fill(white)
+
     ''' Player '''
     #Collosion with Boundary
     if player_x < player_rad:
@@ -627,6 +703,10 @@ while True:
     mouse_pos = pygame.mouse.get_pos()
     mouse_x = player_x - mouse_pos[0]
     mouse_y = player_y - mouse_pos[1]
+
+
+    #multiplyer = math.sqrt(int(mouse_pos[0]/15)^2+int(mouse_pos[0]/15)^2)
+    #pygame.draw.line(Screen, black, (player_x, player_y), (mouse_pos[0], mouse_pos[1]), 8)
 
     if mouse_state != False and mouse_state[2] == 1:
         if Sheild_Health > 0:
@@ -683,10 +763,11 @@ while True:
         freeze_left = 0
 
     myfont = pygame.font.SysFont('Comic Sans MS', 25)
-    textsurface = myfont.render(' Players Health:'+str(Player_Health)+'  Sheilds Health:'+str(Sheild_Health)+'  NPC Number:'+str(len(NPC_1_array))+'  Blocks Available:'+str(Blocks_given)+'  Freeze:'+str(freeze_left)+'  Turrets Available:'+str(Turret_given), False, black)
+    textsurface = myfont.render('   Money:$'+str(Player_money)+'   Players Health:'+str(Player_Health)+'  Sheilds Health:'+str(Sheild_Health)+'  NPC Number:'+str(len(NPC_1_array))+'  Blocks Available:'+str(Blocks_given)+'  Freeze:'+str(freeze_left)+'  Turrets Available:'+str(Turret_given), False, black)
     Screen.blit(textsurface,(0,0))
 
     ''' Updating Changes to the Screen '''
     pygame.display.flip()
+    pygame.display.set_caption('The Battleground')
     Screen.fill(white)
     Clock.tick(fps)
