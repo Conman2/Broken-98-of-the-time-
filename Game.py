@@ -17,21 +17,19 @@ pygame.font.init()
 #Collisions with the corners of blocks (Should be taken into account with the new Collisions but isnt)
 #wave system kinda in but not happy with it
 #Add different levels of Turrets
-#enemy with homing bullets
-#a function for picking available x and y positions
+#enemy with homing bullets (Or a player weapon)
 #all circle on circle collisions
-#Finish the shop and add new items
+#Finish the shop and add new items (Maybe add Ammo)
 #Draw the weapons
-#Make the money move towards the player (Just looks cool) Note probs use a 1/x^2 graph (eg. moves faster the closer it gets)
+#A way to tell what weapon is selected
 
 ''' Variable Managment '''
 #Initializing Variables
-Player_money = turret_time = battle_moon_level = lastfired_rifle = lastfired_shotgun = lastfired_smg = xspeed = yspeed = dx = dy = last_dash = Solid = last_powerup = angle = 0
+Player_money = turret_time = battle_moon_level = lastfired_rifle = lastfired_shotgun = lastfired_smg = lastfired_homing = xspeed = yspeed = dx = dy = last_dash = Solid = last_powerup = angle = 0
 weapon2exist = weapon3exist = battle_moon = Block_place = Turret_place = key_state = freeze = dash = Overlap = Conflict = Sheild_Shoot = powerup_active1 = powerup_active2 = False
 counter = weapon = last_weapon = 1
 lastfired_freeze = -30000
 mouse_state = (0,0,0)
-mouse_pos = (1,1)
 Player_Bullet_array = []
 NPC_Bullet_array = []
 Powerup_array = []
@@ -54,10 +52,10 @@ orange = (255,69,0)
 white = (255,255,255)
 
 #Game Properties
+fps = 30
+Clock = pygame.time.Clock()
 (Screen_Width,Screen_Height) = (1400,1000) #Note this Both need to be Multiples of 60
 Screen = pygame.display.set_mode((Screen_Width, Screen_Height))
-Clock = pygame.time.Clock()
-fps = 30
 
 #General Properties
 player_y = Screen_Height/2
@@ -95,15 +93,24 @@ Shotgun_Spread_ang = 0.1
 weapon1 = {'Damage':4, 'Speed':8, 'Spray':0.2, 'FireRate':100} #SMG
 weapon2 = {'Damage':100, 'Speed':25, 'Spray':0.01, 'FireRate':1000} #High Power, Low Fire Rate
 weapon3 = {'Damage':25, 'Speed':15, 'Spray':0.2, 'FireRate':1000} #Shotgun
-weapon4 = {'Damage':0, 'Speed':0, 'Spray':0, 'FireRate':30000}#Freeze Gun
+weapon4 = {'Damage':0, 'Speed':0, 'Spray':0, 'FireRate':30000} #Freeze Gun
+weapon6 = {'Damage':50, 'Speed':15, 'Spray':0, 'FireRate':2000} #The homing gun
 
 #Power Ups
 powerup_extent = 10000
 powerup_spacing = 30000
 powerup_sheild_melee = 30
-power1 = {'Colour':orange, 'Size':7, 'Active':False, 'Draw':False}#Sheild and Shoot
-power2 = {'Colour':yellow, 'Size':7, 'Active':False, 'Draw':False}#Sheild Melee
-power3 = {'Colour':blue, 'Size':7, 'Active':False,' Draw':False}#Spinning Ball
+power1 = {'Colour':orange, 'Size':7, 'Active':False, 'Draw':False} #Sheild and Shoot
+power2 = {'Colour':yellow, 'Size':7, 'Active':False, 'Draw':False} #Sheild Melee
+power3 = {'Colour':blue, 'Size':7, 'Active':False,' Draw':False} #Spinning Ball
+
+#Shop Items
+Shop_block = 120
+Item1 = {'Name':'Rifle', 'Cost':150}
+Item2 = {'Name':'Shotgun', 'Cost':100}
+Item3 = {'Name':'Turrets', 'Cost':500}
+Item4 = {'Name':'Health', 'Cost':50}
+Item5 = {'Name':'Armour', 'Cost':50}
 
 ''' Object Classes '''
 class NPC_1():
@@ -176,7 +183,15 @@ class Objects():
     def Turret(self):
         pygame.draw.circle(Screen, self.colour, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, Solid)
         pygame.draw.circle(Screen, black, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, 2)
-    def Money(self):
+    def Money(self, player_x, player_y):
+        dist_x = player_x - self.x
+        dist_y = player_y - self.y
+        if math.hypot(dist_x, dist_y) < 300:
+            Speed = 500/math.hypot(dist_x, dist_y)
+            self.Velocity_x = Speed*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
+            self.Velocity_y = Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
+            self.x += self.Velocity_x
+            self.y += self.Velocity_y
         pygame.draw.circle(Screen, self.colour, (int(self.x), int(self.y)), self.Size, Solid)
         pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Size, 2)
 
@@ -228,12 +243,6 @@ while True:
     counter += 1
     if counter > fps + 1:
         counter = 1
-
-    if pygame.time.get_ticks() - lastfired_freeze > Freeze_Space:
-        freeze = False
-
-    if pygame.time.get_ticks() - last_dash > dash_time:
-        dash = False
 
     if NPC_Number%5 == 0:
         Start_time = pygame.time.get_ticks() + 60000
@@ -291,10 +300,12 @@ while True:
                 weapon = 4
             elif event.key == pygame.K_5 and Turret_given > 0:
                 weapon = 5
+            elif event.key == pygame.K_6:
+                weapon = 6
 
         if event.type == pygame.KEYDOWN:
             key_state = pygame.key.get_pressed()
-            if event.key == pygame.K_LSHIFT and key_state != False:
+            if event.key == pygame.K_SPACE and key_state != False and pygame.time.get_ticks() - last_dash > dash_time:
                 xspeed = 3*player_speed*(key_state[100] - key_state[97])
                 yspeed = 3*player_speed*(key_state[115] - key_state[119])
                 last_dash = pygame.time.get_ticks()
@@ -369,6 +380,9 @@ while True:
         for block in Block_array:
             player_bullet.x, player_bullet.y, player_bullet.Velocity_x, player_bullet.Velocity_y, NaN = Collosion(Block_size, player_bullet.Bullet_rad, player_bullet.x, player_bullet.y, block.x, block.y, player_bullet.Velocity_x, player_bullet.Velocity_y)
 
+        for shop in Shop_array:
+            player_bullet.x, player_bullet.y, player_bullet.Velocity_x, player_bullet.Velocity_y, NaN = Collosion(Block_size, player_bullet.Bullet_rad, player_bullet.x, player_bullet.y, block.x, block.y, player_bullet.Velocity_x, player_bullet.Velocity_y)
+
         if player_bullet.x > Screen_Width or player_bullet.x < 0 or player_bullet.y > Screen_Height or player_bullet.y < 0:
             Player_Bullet_array.remove(player_bullet)
             Player_Bullet_Deleted = True
@@ -383,6 +397,9 @@ while True:
         NPC_Bullet_Deleted = False
 
         for block in Block_array:
+            npc_bullet.x, npc_bullet.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y, NaN = Collosion(Block_size, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, block.x, block.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y)
+
+        for shop in Shop_array:
             npc_bullet.x, npc_bullet.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y, NaN = Collosion(Block_size, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, block.x, block.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y)
 
         if mouse_state[2] == 1 and BallCollosion(sheild_rad, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, player_x, player_y) is True and mouse_state != False:
@@ -429,6 +446,10 @@ while True:
                 npc_1.x, npc_1.y, npc_1.Velocity_x, npc_1.Velocity_y, Hit = Collosion(Block_size, npc_1.Radius, npc_1.x, npc_1.y, block.x, block.y, npc_1.Velocity_x, npc_1.Velocity_y)
                 if Hit is True:
                     block.Health += -npc_1.Block_Damage
+
+            for shop in Shop_array:
+                npc_1.x, npc_1.y, npc_1.Velocity_x, npc_1.Velocity_y, NaN = Collosion(Block_size, npc_1.Radius, npc_1.x, npc_1.y, block.x, block.y, npc_1.Velocity_x, npc_1.Velocity_y)
+
             npc_1.Movement()
         else:
             npc_1.Still()
@@ -467,13 +488,13 @@ while True:
 
         pickone = randint(1,3)
         if pickone == 1:
-            powerup = Objects(power_x, power_y, power1['Size'], 1, red)
+            powerup = Objects(power_x, power_y, power1['Size'], 1, power1['Colour'])
             Powerup_array.append(powerup)
         if pickone == 2:
-            powerup = Objects(power_x, power_y, power2['Size'], 2, orange)
+            powerup = Objects(power_x, power_y, power2['Size'], 2, power2['Colour'])
             Powerup_array.append(powerup)
         if pickone == 3:
-            powerup = Objects(power_x, power_y, power3['Size'], 3, blue)
+            powerup = Objects(power_x, power_y, power3['Size'], 3, power3['Colour'])
             Powerup_array.append(powerup)
 
     for powerup in Powerup_array:
@@ -608,7 +629,7 @@ while True:
 
     ''' Money '''
     for money in Money_array:
-        money.Money()
+        money.Money(player_x, player_y)
         if BallCollosion(money.Size, player_rad, player_x, player_y, money.x, money.y) is True:
             Player_money += money.Value
             Money_array.remove(money)
@@ -633,47 +654,57 @@ while True:
                         bought = False
 
                 myfont = pygame.font.SysFont('Comic Sans MS', 25)
-                text = myfont.render('  Money:$'+str(Player_money)+'   Players Health:'+str(Player_Health)+'  Sheilds Health:'+str(Sheild_Health)+'  Turrets Available:'+str(Turret_given)+'  Rifle Available:'+str(weapon2exist)+'  Shotgun Available:'+str(weapon3exist), False, black)
+                text = myfont.render('  Money:$'+str(Player_money)+'   Players Health:'+str(Player_Health)+'   Sheilds Health:'+str(Sheild_Health)+'   Turrets Available:'+str(Turret_given)+'   Rifle Owned:'+str(weapon2exist)+'   Shotgun Owned:'+str(weapon3exist), False, black)
                 Screen.blit(text,(0,0))
 
                 mouse_pos = pygame.mouse.get_pos()
-                pygame.draw.rect(Screen, red, (60, 60, 120, 120), Solid)
-                pygame.draw.rect(Screen, black, (60, 60, 120, 120), 2)
-                text = myfont.render('  Rifle', False, black)
+                pygame.draw.rect(Screen, red, (60, 60, Shop_block, Shop_block), Solid)
+                pygame.draw.rect(Screen, black, (60, 60, Shop_block, Shop_block), 2)
+                text = myfont.render(' '+Item1['Name'], False, black)
                 Screen.blit(text,(60,60))
-                pygame.draw.rect(Screen, yellow, (240, 60, 120, 120), Solid)
-                pygame.draw.rect(Screen, black, (240, 60, 120, 120), 2)
-                text = myfont.render('  Shotgun', False, black)
+                text = myfont.render(' $'+str(Item1['Cost']), False, black)
+                Screen.blit(text,(60,90))
+                pygame.draw.rect(Screen, yellow, (240, 60, Shop_block, Shop_block), Solid)
+                pygame.draw.rect(Screen, black, (240, 60, Shop_block, Shop_block), 2)
+                text = myfont.render(' '+Item2['Name'], False, black)
                 Screen.blit(text,(240,60))
-                pygame.draw.rect(Screen, pink, (420, 60, 120, 120), Solid)
-                pygame.draw.rect(Screen, black, (420, 60, 120, 120), 2)
-                text = myfont.render('  Turrets', False, black)
+                text = myfont.render(' $'+str(Item2['Cost']), False, black)
+                Screen.blit(text,(240,90))
+                pygame.draw.rect(Screen, pink, (420, 60, Shop_block, Shop_block), Solid)
+                pygame.draw.rect(Screen, black, (420, 60, Shop_block, Shop_block), 2)
+                text = myfont.render(' '+Item3['Name'], False, black)
                 Screen.blit(text,(420,60))
-                pygame.draw.rect(Screen, green, (600, 60, 120, 120), Solid)
-                pygame.draw.rect(Screen, black, (600, 60, 120, 120), 2)
-                text = myfont.render('  Health', False, black)
+                text = myfont.render(' $'+str(Item3['Cost']), False, black)
+                Screen.blit(text,(420,90))
+                pygame.draw.rect(Screen, green, (600, 60, Shop_block, Shop_block), Solid)
+                pygame.draw.rect(Screen, black, (600, 60, Shop_block, Shop_block), 2)
+                text = myfont.render(' '+Item4['Name'], False, black)
                 Screen.blit(text,(600,60))
-                pygame.draw.rect(Screen, magenta, (780, 60, 120, 120), Solid)
-                pygame.draw.rect(Screen, black, (780, 60, 120, 120), 2)
-                text = myfont.render('  Sheild', False, black)
+                text = myfont.render(' $'+str(Item4['Cost']), False, black)
+                Screen.blit(text,(600,90))
+                pygame.draw.rect(Screen, magenta, (780, 60, Shop_block, Shop_block), Solid)
+                pygame.draw.rect(Screen, black, (780, 60, Shop_block, Shop_block), 2)
+                text = myfont.render(' '+Item5['Name'], False, black)
                 Screen.blit(text,(780,60))
+                text = myfont.render(' $'+str(Item5['Cost']), False, black)
+                Screen.blit(text,(780,90))
 
-                if 60 < mouse_pos[0] < 180 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and weapon2exist is False and bought is False :
-                    Player_money += -10
+                if 60 < mouse_pos[0] < 180 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item1['Cost'] and weapon2exist is False and bought is False :
+                    Player_money += -Item1['Cost']
                     bought = weapon2exist = True
-                elif 240 < mouse_pos[0] < 360 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and weapon3exist is False and bought is False:
-                    Player_money += -10
+                elif 240 < mouse_pos[0] < 360 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item2['Cost'] and weapon3exist is False and bought is False:
+                    Player_money += -Item2['Cost']
                     bought = weapon3exist = True
-                elif 420 < mouse_pos[0] < 540 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and bought is False:
-                    Player_money += -10
+                elif 420 < mouse_pos[0] < 540 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item3['Cost'] and bought is False:
+                    Player_money += -Item3['Cost']
                     Turret_given += 1
                     bought = True
-                elif 600 < mouse_pos[0] < 720 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and weapon3exist is False and bought is False:
-                    Player_money += -10
+                elif 600 < mouse_pos[0] < 720 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item4['Cost'] and weapon3exist is False and bought is False:
+                    Player_money += -Item4['Cost']
                     Player_Health += 10
                     bought  = True
-                elif 780 < mouse_pos[0] < 900 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= 10 and bought is False:
-                    Player_money += -10
+                elif 780 < mouse_pos[0] < 900 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item5['Cost'] and bought is False:
+                    Player_money += -Item5['Cost']
                     Sheild_Health += 10
                     bought = True
 
@@ -703,10 +734,6 @@ while True:
     mouse_pos = pygame.mouse.get_pos()
     mouse_x = player_x - mouse_pos[0]
     mouse_y = player_y - mouse_pos[1]
-
-
-    #multiplyer = math.sqrt(int(mouse_pos[0]/15)^2+int(mouse_pos[0]/15)^2)
-    #pygame.draw.line(Screen, black, (player_x, player_y), (mouse_pos[0], mouse_pos[1]), 8)
 
     if mouse_state != False and mouse_state[2] == 1:
         if Sheild_Health > 0:
@@ -755,6 +782,10 @@ while True:
             lastfired_freeze = pygame.time.get_ticks()
             freeze = True
             weapon = last_weapon
+        #Homing
+        if weapon == 6 and  pygame.time.get_ticks() - lastfired_homing > weapon6['FireRate']:
+            lastfired_homing = pygame.time.get_ticks()
+
 
     ''' Writing the Stats '''
     if weapon4['FireRate'] - pygame.time.get_ticks() + lastfired_freeze > 0:
