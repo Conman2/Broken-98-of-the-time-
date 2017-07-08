@@ -1,44 +1,14 @@
+''' Import '''
 import pygame
 import math
-import time
 import numpy
-from random import randint, choice
+import random
+import time
 
 pygame.init()
 pygame.font.init()
 
-''' Things that need Adding/Fixing '''
-#Bots not colliding with each other
-#Take you to a death screen where you can reatart after dieing
-#shotgun triginometery
-#Multiplayer
-#powerup 2 doesn't work during freezing
-#sliding across multiple blocks doesnt work (because the player asctually moves inside the block)
-#Collisions with the corners of blocks (Should be taken into account with the new Collisions but isnt)
-#wave system kinda in but not happy with it
-#Add different levels of Turrets
-#enemy with homing bullets (Or a player weapon)
-#all circle on circle collisions
-#Finish the shop and add new items (Maybe add Ammo)
-#Draw the weapons
-#A way to tell what weapon is selected
-
-''' Variable Managment '''
-#Initializing Variables
-Player_money = turret_time = battle_moon_level = lastfired_rifle = lastfired_shotgun = lastfired_smg = lastfired_homing = xspeed = yspeed = dx = dy = last_dash = Solid = last_powerup = angle = 0
-weapon2exist = weapon3exist = battle_moon = Block_place = Turret_place = key_state = freeze = dash = Overlap = Conflict = Sheild_Shoot = powerup_active1 = powerup_active2 = False
-counter = weapon = last_weapon = 1
-lastfired_freeze = -30000
-mouse_state = (0,0,0)
-Player_Bullet_array = []
-NPC_Bullet_array = []
-Powerup_array = []
-Turret_array = []
-Block_array = []
-NPC_1_array = []
-Money_array = []
-Shop_array = []
-
+''' Variables '''
 #Colour libary
 black = (0,0,0)
 red = (255,0,0)
@@ -54,149 +24,107 @@ white = (255,255,255)
 #Game Properties
 fps = 30
 Clock = pygame.time.Clock()
-(Screen_Width,Screen_Height) = (1400,1000) #Note this Both need to be Multiples of 60
-Screen = pygame.display.set_mode((Screen_Width, Screen_Height))
+(screen_width,screen_height) = (1400,1000) #Note this Both need to be Multiples of Block_size
+screen = pygame.display.set_mode((screen_width, screen_height))
 
-#General Properties
-player_y = Screen_Height/2
-player_x = Screen_Width/2
+diagonal_multiplyer = 0.65
+player_y = screen_height/2
+player_x = screen_width/2
+battlemoon_health = 100
+battlemoon_orbit = 35
+sheild_health = 100
+block_number = 60
+
+#Starting Conditions
+rifle_owned = False
+blocks_given = 3
+turret_given = 1
+weapon = 1
+
+#Shapes
+sheild_colour = green
+block_size = 40
 player_rad = 15
-player_speed = 8
 sheild_rad = 30
-Blocks_given = 5
-Turret_given = 0
-Player_Health = 100
-Sheild_Health = 100
-Diagonal_Speed = 0.7
-Start_time = 15000
-dash_time = 250
-Block_size = 40
-Block_number = 60
-battle_moon_radius = 35
-battle_moon_shoot = 400
-battle_moon_health = 100
+bullet_size = 5
 
-#Different NPCs *Note that all the Radius must be Integers
-NPC_Number = 1
-HealthColour = white
-npc1 = {'Radius': 15, 'Speed': 6, 'Colour': blue, 'Health': 100, 'Bullet_Damage': 5, 'Sheild_Damage': 1, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':8, 'Bullet_Spray':0.5, 'Melee_Damage':2, 'Block_Damage':0.1} #Default
-npc2 = {'Radius': 10, 'Speed': 10, 'Colour': grey, 'Health': 15, 'Bullet_Damage': 5, 'Sheild_Damage': 15, 'Bullet_rate':4, 'Shoot_range':30, 'Bullet_Speed':6, 'Bullet_Spray':1.5, 'Melee_Damage':10, 'Block_Damage':0.2} #Sheild Breaker
-npc3 = {'Radius': 19, 'Speed': 4, 'Colour': magenta, 'Health': 300, 'Bullet_Damage': 7, 'Sheild_Damage': 2, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':6, 'Bullet_Spray':0.3, 'Melee_Damage':2, 'Block_Damage':0.2} #Doc
-npc4 = {'Radius': 10, 'Speed': 3, 'Colour': green, 'Health': 200, 'Bullet_Damage': 20, 'Sheild_Damage': 2, 'Bullet_rate':30, 'Shoot_range':800, 'Bullet_Speed':15, 'Bullet_Spray':0, 'Melee_Damage':2, 'Block_Damage':0.2} #Sniper
-npc5 = {'Radius': 15, 'Speed': 3, 'Colour': yellow, 'Health': 100, 'Bullet_Damage': 2, 'Sheild_Damage': 1, 'Bullet_rate':10, 'Shoot_range':200, 'Bullet_Speed':8, 'Bullet_Spray':0.5, 'Melee_Damage':2, 'Block_Damage':3} #Block Breaker
+#Timing
+bullet_exist_time = 7000
+freeze_duration = 10000
+powerup_delay = 30000
+wave_delay = 20000
+dash_time = 300
 
-#Bullet Properties
-Bullet_rad = 5
-Exist_time = 7000
-Freeze_Space = 15000
-Shotgun_Spread_ang = 0.1
-weapon1 = {'Damage':4, 'Speed':8, 'Spray':0.2, 'FireRate':100} #SMG
-weapon2 = {'Damage':100, 'Speed':25, 'Spray':0.01, 'FireRate':1000} #High Power, Low Fire Rate
-weapon3 = {'Damage':25, 'Speed':15, 'Spray':0.2, 'FireRate':1000} #Shotgun
-weapon4 = {'Damage':0, 'Speed':0, 'Spray':0, 'FireRate':30000} #Freeze Gun
-weapon6 = {'Damage':50, 'Speed':15, 'Spray':0, 'FireRate':2000} #The homing gun
+#Array Shite
+Powerup_array = []
+Bullet_array = []
+Turret_array = []
+Block_array = []
+Money_array = []
+Shop_array = []
+Bot_array = []
 
-#Power Ups
-powerup_extent = 10000
-powerup_spacing = 30000
-powerup_sheild_melee = 30
-power1 = {'Colour':orange, 'Size':7, 'Active':False, 'Draw':False} #Sheild and Shoot
-power2 = {'Colour':yellow, 'Size':7, 'Active':False, 'Draw':False} #Sheild Melee
-power3 = {'Colour':blue, 'Size':7, 'Active':False,' Draw':False} #Spinning Ball
+#Boolean Shite
+finished = key_state = weapon_state = dash = freeze = reason_bot = reason_powerup = False
 
-#Shop Items
-Shop_block = 120
-Item1 = {'Name':'Rifle', 'Cost':150}
-Item2 = {'Name':'Shotgun', 'Cost':100}
-Item3 = {'Name':'Turrets', 'Cost':500}
-Item4 = {'Name':'Health', 'Cost':50}
-Item5 = {'Name':'Armour', 'Cost':50}
+#Number Shite
+weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = battlemoon_level = 0
+battlemoon_angle = last_dash = player_speedx = player_speedy = powerup_active = wave_number = 0
+mouse_state = (0,0,0)
+counter = 1
 
-''' Object Classes '''
-class NPC_1():
-    def __init__(self, x_pos, y_pos, npc_rad, Speed, Colour, NPC_Health, Shoot_rate, NPC_Type, Shoot_range, Radius, Sheild_Damage, Melee_Damage, Bullet_speed, Bullet_damage, Bullet_spray, Block_Damage):
-        self.Type = NPC_Type
-        self.Radius = Radius
-        self.Colour = Colour
-        self.x = x_pos
-        self.y = y_pos
-        self.Speed = Speed
-        self.Health = NPC_Health
-        self.Block_Damage = Block_Damage
-        self.Sheild_Damage = Sheild_Damage
-        self.Melee_Damage = Melee_Damage
-        self.Shoot_rate = Shoot_rate
-        self.Shoot_dist = Shoot_range
-        self.Bullet_Damage = Bullet_damage
-        self.Bullet_speed = Bullet_speed
-        self.Bullet_spray = Bullet_spray
-        self.Velocity_x = self.Velocity_y = 0
-    def Movement(self):
-        if (self.x - player_x != 0) and (self.y - player_y != 0):
-            self.Velocity_x = self.Speed*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
-            self.Velocity_y = self.Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
-        else:
-            self.Velocity_x = 0
-            self.Velocity_y = 0
-        self.x += self.Velocity_x
-        self.y += self.Velocity_y
-        pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Radius, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Radius, 2)
-    def Still(self):
-        pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Radius, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Radius, 2)
 
-class Bullet():
-    def __init__(self,x_npc,y_npc,dx,dy,Bullet_rad,Colour,Speed,Damage,Exist_time,xspeed,yspeed):
-        self.Bullet_rad = Bullet_rad
-        self.x = x_npc
-        self.y = y_npc
-        self.Speed = Speed
-        self.Colour = Colour
-        self.Damage = Damage
-        self.Velocity_x = self.Speed*(-dx/(abs(dx)+abs(dy)))
-        self.Velocity_y = self.Speed*(-dy/(abs(dx)+abs(dy)))
-        self.Exist_time = Exist_time
-    def Position(self):
-        self.x += self.Velocity_x
-        self.y += self.Velocity_y
-        pygame.draw.circle(Screen, self.Colour, (int(self.x), int(self.y)), self.Bullet_rad, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Bullet_rad, 2)
+''' Dictionaries '''
+Bot = [
+    #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
+    [15, 6,  blue,    100, 5,  1,  10, 200, 8, 0.5, 2, 0.1], #Default        0
+    [10, 10, grey,    20,  5,  15, 4,  30,  6, 0.5, 2, 0.1], #Sheild-Breaker 1
+    [19, 4,  magenta, 300, 7,  2,  10, 200, 6, 0.5, 2, 0.1], #Doc            2
+    [10, 3,  green,   200, 20, 2,  30, 600, 8, 0.5, 2, 0.1], #Sniper         3
+    [15, 3,  yellow,  100, 2,  1,  10, 200, 8, 0.5, 2, 0.1]] #Block-Breaker  4
 
-class Objects():
-    def __init__(self, x_pos, y_pos, size, poweruptype, colour):
-        self.x = x_pos
-        self.y = y_pos
-        self.colour = colour
-        self.Size = size
-        self.type = poweruptype
-        self.Health = 100
-        self.range = 400
-        self.shootrate = 10
-        self.Value = 10
-    def Block(self):
-        pygame.draw.rect(Screen, self.colour, (self.x, self.y, self.Size, self.Size), Solid)
-        pygame.draw.rect(Screen, black, (self.x, self.y, self.Size, self.Size), 2)
-    def Powerup(self):
-        pygame.draw.circle(Screen, self.colour, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, 2)
-    def Turret(self):
-        pygame.draw.circle(Screen, self.colour, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x + Block_size/2), int(self.y + Block_size/2)), self.Size, 2)
-    def Money(self, player_x, player_y):
-        dist_x = player_x - self.x
-        dist_y = player_y - self.y
-        if math.hypot(dist_x, dist_y) < 300:
-            Speed = 500/math.hypot(dist_x, dist_y)
-            self.Velocity_x = Speed*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
-            self.Velocity_y = Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
-            self.x += self.Velocity_x
-            self.y += self.Velocity_y
-        pygame.draw.circle(Screen, self.colour, (int(self.x), int(self.y)), self.Size, Solid)
-        pygame.draw.circle(Screen, black, (int(self.x), int(self.y)), self.Size, 2)
+Weapon = [
+    #Damage, Speed, Spray, Firerate, Name
+    [4,   8,  0.1,  100,   'SMG'    ], #SMG     0
+    [100, 25, 0.01, 1000,  'Sniper' ], #Sniper  1
+    [25,  15, 0.1,  1000,  'Shotgun'], #Shotgun 2
+    [50,  15, 0,    2000,  'Homing' ], #Homing  3
+    [0,   0,  0,    30000, 'Freeze' ]] #Freeze  4
 
-''' Collosions '''
-def Collosion(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
+Powerup = [
+    #Colour, Radius, Active, Draw
+    [orange, 7], #Sheild and Shoot 0
+    [yellow, 7], #Sheild Melee     1
+    [blue,   7]] #Battlemoon       2
+
+Shop = [
+    #Name, Cost
+    ['Rifle',      200], #0
+    ['Shotgun',    150], #1
+    ['Turret',     300], #2
+    ['Health',     20 ], #3
+    ['Armour',     20 ], #4
+    ['Battlemoon', 200], #5
+    ['Block',      150]] #6
+
+Turret = [
+    #Shootrate, Damage, Range, Spray, Speed, Colour
+    [30,  5,  400,  0.2,  8 , grey  ], #Turret0
+    [15,  18, 600,  0.01, 14, orange], #Turret1
+    [15,  35, 800,  0,    18, red   ], #Turret2
+    [10,  80, 1000, 0,    25, black ]] #Turret3
+
+Battlemoon = [
+    #Shootrate, Damage, Radius, Spray, Colour, Speed
+    [30, 4,  300, 0.2,  grey  , 8 ], #Level0
+    [30, 8,  400, 0.1,  green , 10], #Level1
+    [15, 15, 500, 0.08, yellow, 12], #Level2
+    [15, 25, 600, 0.05, orange, 14], #Level3
+    [10, 35, 700, 0.01, red   , 16], #Level4
+    [10, 50, 800, 0,    black , 18]] #Level5
+
+''' Functions '''
+def Blocks(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
     diffx = x - max(block_x - abs(xspeed), min(x, block_x + Block_size + abs(xspeed)))
     diffy = y - max(block_y - abs(yspeed), min(y, block_y + Block_size + abs(yspeed)))
     if (diffx*diffx + diffy*diffy) < Radius*Radius:
@@ -215,7 +143,7 @@ def Collosion(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
         return x, y, xspeed, yspeed, True
     return x, y, xspeed, yspeed, False
 
-def BallCollosion(Radius1,Radius2,x1,y1,x2,y2):
+def Balls(Radius1,Radius2,x1,y1,x2,y2):
     diffx = x1 - x2
     diffy = y1 - y2
     distance = math.hypot(diffx, diffy)
@@ -224,581 +152,474 @@ def BallCollosion(Radius1,Radius2,x1,y1,x2,y2):
     else:
         return False
 
-''' Generating the Block Spawns '''
-X_range = range(0, Screen_Width, Block_size)
-Y_range = range(0, Screen_Height, Block_size)
-positions = numpy.zeros((len(X_range), len(Y_range)))
-for i in range(0,Block_number):
+''' Classes '''
+class Bot():
+    def __init__(self, bot_type):
+        self.type = bot_type
+        #Spawn Location
+        position = random.choice([1,2])
+        if position == 1:
+            self.x = random.choice([-50, screen_width + 50])
+            self.y = random.randint(0, screen_height)
+        elif position == 2:
+            self.x = random.randint(0, screen_width)
+            self.y = random.choice([-50, screen_width + 50])
+    def Move(self, Bot):
+        self.velocity_x = Bot[self.type][1]*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
+        self.velocity_y = Bot[self.type][1]*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
+        self.x += self.Velocity_x
+        self.y += self.Velocity_y
+        pygame.draw.circle(screen, Bot[self.type][2], (int(self.x), int(self.y)), Bot[self.type][0], 0)
+        pygame.draw.circle(screen, black, (int(self.x), int(self.y)), Bot[self.type][0], 2)
+    def Still(self, Bot):
+        pygame.draw.circle(screen, Bot[self.type][2], (int(self.x), int(self.y)), Bot[self.type][0], 0)
+        pygame.draw.circle(screen, black, (int(self.x), int(self.y)), self.Radius, 2)
+
+class Bullet():
+    def __init__(self, speed, size, colour, x, y, dx, dy, bullet_type):
+        self.type = bullet_type
+        self.x = x
+        self.y = y
+        self.size = size
+        self.colour = colour
+        self.exist_time = pygame.time.get_ticks()
+        self.velocity_x = speed*(-dx/(abs(dx)+abs(dy)))
+        self.velocity_y = speed*(-dy/(abs(dx)+abs(dy)))
+    def Move(self):
+        self.x += self.velocity_x
+        self.y += self.velocity_y
+        pygame.draw.circle(screen, self.colour, (int(self.x), int(self.y)), self.size, 0)
+        pygame.draw.circle(screen, black, (int(self.x), int(self.y)), self.size, 2)
+
+class Object():
+    def __init__(self, x, y, size, colour, object_type):
+        self.type = object_type
+        self.x = x
+        self.y = y
+        self.size = size
+        self.health = 100
+        self.colour = colour
+    def Block(self):
+        pygame.draw.rect(screen, grey, (self.x, self.y, self.size, self.size), 0)
+        pygame.draw.rect(screen, black, (self.x, self.y, self.size, self.size), 2)
+    def Turret(self, Turret):
+        pygame.draw.circle(screen, Turret[self.type][6], (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 0)
+        pygame.draw.circle(screen, black, (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 2)
+    def Powerup(self, Powerup):
+        pygame.draw.circle(screen, Powerup[self.type][1], (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 0)
+        pygame.draw.circle(screen, black, (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 2)
+    def Money(self):
+        dist_x = player_x - self.x
+        dist_y = player_y - self.y
+        if math.hypot(dist_x, dist_y) < 300:
+            Speed = 500/math.hypot(dist_x, dist_y)
+            self.Velocity_x = Speed*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
+            self.Velocity_y = Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
+            self.x += self.Velocity_x
+            self.y += self.Velocity_y
+        pygame.draw.circle(screen, yellow, (int(self.x), int(self.y)), self.size, 0)
+        pygame.draw.circle(screen, black, (int(self.x), int(self.y)), self.Size, 2)
+
+''' Map Generation '''
+x_range = range(0, screen_width,  block_size)
+y_range = range(0, screen_height, block_size)
+position = numpy.zeros((len(x_range), len(y_range)))
+for i in range(0, block_number):
     while True:
-        X_value = choice(X_range)
-        Y_value = choice(Y_range)
-        if positions[int(X_value/Block_size)][int(Y_value/Block_size)] == 0:
-            positions[int(X_value/Block_size)][int(Y_value/Block_size)] = 1
-            block = Objects(X_value, Y_value, Block_size, 0, grey)
+        x_value = random.choice(x_range)
+        y_value = random.choice(y_range)
+        if position[int(x_value/block_size)][int(y_value/block_size)] ==  0:
+            position[int(x_value/block_size)][int(y_value/block_size)] = 1
+            block = Object(x_value, y_value, block_size, grey, 1)
             Block_array.append(block)
             break
 
-''' Running the Game '''
+''' Game '''
 while True:
     counter += 1
-    if counter > fps + 1:
+    if counter > fps:
         counter = 1
 
-    if NPC_Number%5 == 0:
-        Start_time = pygame.time.get_ticks() + 60000
-        if len(Shop_array) < 1:
-            while True:
-                X_value = choice(X_range)
-                Y_value = choice(Y_range)
-                if positions[int(X_value/Block_size)][int(Y_value/Block_size)] == 0:
-                    positions[int(X_value/Block_size)][int(Y_value/Block_size)] = 1
-                    shop = Objects(X_value, Y_value, Block_size, 0, blue)
-                    Shop_array.append(shop)
-                    break
-
-    ''' Creating NPCs '''
-    if len(NPC_1_array) < NPC_Number and pygame.time.get_ticks() > Start_time:
-        x_y = choice([1,2])
-        if x_y == 1:
-            x = choice([-50, Screen_Width + 50])
-            y = randint(0,Screen_Height)
-        elif x_y == 2:
-            y = choice([-50, Screen_Width + 50])
-            x = randint(0,Screen_Width)
-
-        if NPC_Number%6 == 0:
-            npc_1 = NPC_1(x,y,npc2['Radius'],npc2['Speed'],npc2['Colour'],npc2['Health'],npc2['Bullet_rate'],2,npc2['Shoot_range'],npc2['Radius'],npc2['Sheild_Damage'],npc2['Melee_Damage'],npc2['Bullet_Speed'],npc2['Bullet_Damage'],npc2['Bullet_Spray'],npc2['Block_Damage'])
-            NPC_1_array.append(npc_1)
-        elif NPC_Number%3 == 0:
-            npc_1 = NPC_1(x,y,npc3['Radius'],npc3['Speed'],npc3['Colour'],npc3['Health'],npc3['Bullet_rate'],3,npc3['Shoot_range'],npc3['Radius'],npc3['Sheild_Damage'],npc3['Melee_Damage'],npc3['Bullet_Speed'],npc3['Bullet_Damage'],npc3['Bullet_Spray'],npc3['Block_Damage'])
-            NPC_1_array.append(npc_1)
-        elif NPC_Number%4 == 0:
-            npc_1 = NPC_1(x,y,npc4['Radius'],npc4['Speed'],npc4['Colour'],npc4['Health'],npc4['Bullet_rate'],4,npc4['Shoot_range'],npc4['Radius'],npc4['Sheild_Damage'],npc4['Melee_Damage'],npc4['Bullet_Speed'],npc4['Bullet_Damage'],npc4['Bullet_Spray'],npc4['Block_Damage'])
-            NPC_1_array.append(npc_1)
-        elif NPC_Number%5 == 0:
-            npc_1 = NPC_1(x,y,npc5['Radius'],npc5['Speed'],npc5['Colour'],npc5['Health'],npc5['Bullet_rate'],5,npc5['Shoot_range'],npc5['Radius'],npc5['Sheild_Damage'],npc5['Melee_Damage'],npc5['Bullet_Speed'],npc5['Bullet_Damage'],npc5['Bullet_Spray'],npc5['Block_Damage'])
-            NPC_1_array.append(npc_1)
-        else:
-            npc_1 = NPC_1(x,y,npc1['Radius'],npc1['Speed'],npc1['Colour'],npc1['Health'],npc1['Bullet_rate'],1,npc1['Shoot_range'],npc1['Radius'],npc1['Sheild_Damage'],npc1['Melee_Damage'],npc1['Bullet_Speed'],npc1['Bullet_Damage'],npc1['Bullet_Spray'],npc1['Block_Damage'])
-            NPC_1_array.append(npc_1)
-
-    ''' Receiving any Player Inputs '''
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             quit()
 
-        if event.type == pygame.KEYUP:
-            key_state = pygame.key.get_pressed()
-            if event.key == pygame.K_1:
-                weapon = last_weapon = 1
-            elif event.key == pygame.K_2 and weapon2exist is True:
-                weapon = last_weapon = 2
-            elif event.key == pygame.K_3 and weapon3exist is True:
-                weapon = last_weapon = 3
-            elif event.key == pygame.K_4 and Blocks_given > 0:
-                weapon = 4
-            elif event.key == pygame.K_5 and Turret_given > 0:
-                weapon = 5
-            elif event.key == pygame.K_6:
-                weapon = 6
-
-        if event.type == pygame.KEYDOWN:
-            key_state = pygame.key.get_pressed()
-            if event.key == pygame.K_SPACE and key_state != False and pygame.time.get_ticks() - last_dash > dash_time:
-                xspeed = 3*player_speed*(key_state[100] - key_state[97])
-                yspeed = 3*player_speed*(key_state[115] - key_state[119])
-                last_dash = pygame.time.get_ticks()
-                dash = True
+        ''' User Inputs '''
+        if event.type == pygame.KEYUP or event.type == pygame.KEYDOWN:
+            key_state = list(pygame.key.get_pressed())
 
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
-            mouse_state = pygame.mouse.get_pressed()
+            mouse_state = list(pygame.mouse.get_pressed())
 
-        if event.type == pygame.MOUSEBUTTONUP:
-            Block_place = False
-            Turret_place = False
+    if key_state is not False:
+        if key_state[pygame.K_1] == 1:
+            weapon = last_weapon = 1
+        elif key_state[pygame.K_2] == 1:
+            weapon = last_weapon = 2
+        elif key_state[pygame.K_3] == 1:
+            weapon = last_weapon = 3
+        elif key_state[pygame.K_4] == 1:
+            weapon = last_weapon = 4
+        elif key_state[pygame.K_5] == 1:
+            weapon = 5
+        elif key_state[pygame.K_6] == 1:
+            weapon = 6
 
-    ''' Managing Key Inputs '''
-    if key_state != False and dash is False:
-        xspeed = player_speed*(key_state[100] - key_state[97])
-        yspeed = player_speed*(key_state[115] - key_state[119])
-    if abs(xspeed) == abs(yspeed):
-        player_x += xspeed*Diagonal_Speed
-        player_y += yspeed*Diagonal_Speed
+    ''' Player '''
+    #Movement
+    if dash is False and key_state != False:
+        player_speedx = 7*(key_state[pygame.K_d] - key_state[pygame.K_a])
+        player_speedy = 7*(key_state[pygame.K_s] - key_state[pygame.K_w])
+        if key_state[pygame.K_SPACE] == 1:
+            player_speedx = player_speedx*3
+            player_speedy = player_speedy*3
+            last_dash = pygame.time.get_ticks()
+            key_state[pygame.K_SPACE] = 0
+            dash = True
+    elif pygame.time.get_ticks() - last_dash > dash_time:
+        dash = False
+
+    if abs(player_speedx) == abs(player_speedy):
+        player_x += player_speedx*diagonal_multiplyer
+        player_y += player_speedy*diagonal_multiplyer
     else:
-        player_x += xspeed
-        player_y += yspeed
+        player_x += player_speedx
+        player_y += player_speedy
 
-    ''' Placing Blocks '''
-    if mouse_state[1] == 1 and Blocks_given > 0 and Block_place is False and weapon != 5:
-        Conflict = False
-        for thing1 in X_range:
+    #Sheild
+    if mouse_state[2] == 1 and sheild_health >= 0:
+        pygame.draw.circle(screen, sheild_colour, (int(player_x),int(player_y)), sheild_rad, 3)
+        if powerup_active != 1:
+            sheild_active = True
+    else:
+        sheild_active = False
+
+    #Weapons
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_pos_x = player_x - mouse_pos[0]
+    mouse_pos_y = player_y - mouse_pos[1]
+    if mouse_state[0] == 1 and sheild_active is False:
+        #SMG
+        if weapon == 1 and pygame.time.get_ticks() - weapon_1_fired > Weapon[0][3]:
+            weapon_1_fired = pygame.time.get_ticks()
+            bullet = Bullet(Weapon[0][1], bullet_size, green, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[0][2]*mouse_pos_y)), abs(int(Weapon[0][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[0][2]*mouse_pos_x)), abs(int(Weapon[0][2]*mouse_pos_x))), 1)
+            Bullet_array.append(bullet)
+        #Sniper-rifle
+        elif weapon == 2 and rifle_owned is True and pygame.time.get_ticks() - weapon_2_fired > Weapon[1][3]:
+            weapon_2_fired = pygame.time.get_ticks()
+            bullet = Bullet(Weapon[1][1], bullet_size, green, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[1][2]*mouse_pos_y)), abs(int(Weapon[1][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[1][2]*mouse_pos_x)), abs(int(Weapon[1][2]*mouse_pos_x))), 1)
+            Bullet_array.append(bullet)
+        #Shotgun
+        elif weapon == 3 and shotgun_owned is False and pygame.time.get_ticks() - weapon_3_fired > Weapon[2][3]:
+            weapon_3_fired = pygame.time.get_ticks()
+            bullet = Bullet(Weapon[2][1], bullet_size, green, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[2][2]*mouse_pos_y)), abs(int(Weapon[2][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[2][2]*mouse_pos_x)), abs(int(Weapon[2][2]*mouse_pos_x))), 1)
+            Bullet_array.append(bullet)
+        #Homing
+        elif weapon == 4 and homing is True and pygame.time.get_ticks() - weapon_4_fired > Weapon[3][3]:
+            weapon_4_fired = pygame.time.get_ticks()
+            bullet = Bullet(Weapon[3][1], bullet_size, green, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[4][3]*mouse_pos_y)), abs(int(Weapon[4][3]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[3][2]*mouse_pos_x)), abs(int(Weapon[3][2]*mouse_pos_x))), 1)
+            Bullet_array.append(bullet)
+        #Freeze
+        elif weapon == 5 and freezes_owned > 0 and pygame.time.get_ticks() - weapon_5_fired > Weapon[4][3]:
+            freeze = True
+            weapon_5_fired = pygame.time.get_ticks()
+
+        #Ending the Freeze
+        if pygame.time.get_ticks() - weapon_5_fired > freeze_duration:
+            freeze = False
+
+    ''' Placing '''
+    #Blocks
+    if mouse_state[1] == 1 and blocks_given > 0:
+        for thing1 in x_range:
             if mouse_pos[0] > thing1:
-                Block_x = thing1
+                block_x = thing1
 
-        for thing2 in Y_range:
+        for thing2 in y_range:
             if mouse_pos[1] > thing2:
-                Block_y = thing2
+                block_y = thing2
 
-        for npc_1 in NPC_1_array:
-            if Block_x < npc_1.x < Block_x + Block_size and Block_y < npc_1.y < Block_y + Block_size :
-                NPC_1_array.remove(npc_1)
-                NPC_Number += 1
-                Player_Health += 10
-                Sheild_Health += 10
-
-        if positions[int(Block_x/Block_size)][int(Block_y/Block_size)] == 0:
-            positions[int(Block_x/Block_size)][int(Block_y/Block_size)] = 1
-            block = Objects(Block_x, Block_y, Block_size, 0, grey)
+        if position[int(block_x/block_size)][int(block_y/block_size)] == 0:
+            position[int(block_x/block_size)][int(block_y/block_size)] = 1
+            block = Object(block_x, block_y, block_size, 0, grey)
             Block_array.append(block)
-            Block_place = True
-            Blocks_given += -1
+            mouse_state[1] = 0
 
-    ''' Placing Turret '''
-    if mouse_state[0] == 1 and Turret_given > 0 and Turret_place is False and weapon == 5:
-        Conflict_t = False
-        for thing3 in X_range:
+            for bot in Bot_array:
+                if block_x < bot.x < block_x + block_size and block_y < bot.y < block_y + block_size :
+                    Bot_array.remove(bot)
+
+    #Turrets
+    elif mouse_state[0] == 1 and turret_given > 0 and weapon == 6 is True:
+        for thing3 in x_range:
             if mouse_pos[0] > thing3:
                 turret_x = thing3
 
-        for thing4 in Y_range:
+        for thing4 in y_range:
             if mouse_pos[1] > thing4:
                 turret_y = thing4
 
         if positions[int(turret_x/Block_size)][int(turret_y/Block_size)] == 0:
-            positions[int(turret_x/Block_size)][int(turret_y/Block_size)] = 1
-            turret = Objects(turret_x, turret_y, 15, 0, magenta)
-            Turret_array.append(turret)
-            Turret_place = True
-            Turret_given += -1
+            positions[int(turret_x/Block_size)][int(turret_y/Block_size)] = 3
             weapon = last_weapon
+            turret = Object()
+            Turret_array.append(turret)
+            Turret_given += -1
 
-    ''' Player Bullets '''
-    for player_bullet in Player_Bullet_array:
-        Player_Bullet_Deleted = False
-
+    ''' Bullets '''
+    for bullet in Bullet_array:
+        #Block Collision
         for block in Block_array:
-            player_bullet.x, player_bullet.y, player_bullet.Velocity_x, player_bullet.Velocity_y, NaN = Collosion(Block_size, player_bullet.Bullet_rad, player_bullet.x, player_bullet.y, block.x, block.y, player_bullet.Velocity_x, player_bullet.Velocity_y)
+            bullet.x, bullet.y, bullet.velocity_x, bullet.velocity_y, _ = Blocks(block_size, bullet.size, bullet.x, bullet.y, block.x, block.y, bullet.velocity_x, bullet.velocity_y)
 
+        #Shop Collision
         for shop in Shop_array:
-            player_bullet.x, player_bullet.y, player_bullet.Velocity_x, player_bullet.Velocity_y, NaN = Collosion(Block_size, player_bullet.Bullet_rad, player_bullet.x, player_bullet.y, block.x, block.y, player_bullet.Velocity_x, player_bullet.Velocity_y)
+            bullet.x, bullet.y, bullet.velocity_x, bullet.velocity_y, _ = Blocks(block_size, bullet.size, bullet.x, bullet.y, block.x, block.y, bullet.velocity_x, bullet.velocity_y)
 
-        if player_bullet.x > Screen_Width or player_bullet.x < 0 or player_bullet.y > Screen_Height or player_bullet.y < 0:
-            Player_Bullet_array.remove(player_bullet)
-            Player_Bullet_Deleted = True
+        #Edge of map despawn
+        if bullet.x > screen_width or bullet.x < 0 or bullet.y > screen_height or bullet.y < 0:
+            Bullet_array.remove(bullet)
 
-        if pygame.time.get_ticks() - player_bullet.Exist_time > Exist_time and Player_Bullet_Deleted is False:
-            Player_Bullet_array.remove(player_bullet)
+        #Maximium life reached
+        if pygame.time.get_ticks() - bullet.exist_time > bullet_exist_time:
+            Bullet_array.remove(bullet)
 
-        player_bullet.Position()
+        #Bot Bullets only
+        if bullet.type == 2:
+            #Collision with sheild
+            if mouse_state[2] is True and Balls(sheild_rad, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, player_x, player_y) is True:
+                Bullet_array.remove(bullet)
 
-    ''' NPCs bullet '''
-    for npc_bullet in NPC_Bullet_array:
-        NPC_Bullet_Deleted = False
+            #Collision with player
+            elif Balls(player_rad, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, player_x, player_y) is True:
+                Bullet_array.remove(bullet)
 
-        for block in Block_array:
-            npc_bullet.x, npc_bullet.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y, NaN = Collosion(Block_size, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, block.x, block.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y)
-
-        for shop in Shop_array:
-            npc_bullet.x, npc_bullet.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y, NaN = Collosion(Block_size, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, block.x, block.y, npc_bullet.Velocity_x, npc_bullet.Velocity_y)
-
-        if mouse_state[2] == 1 and BallCollosion(sheild_rad, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, player_x, player_y) is True and mouse_state != False:
-            NPC_Bullet_array.remove(npc_bullet)
-            NPC_Bullet_Deleted = True
-
-        if npc_bullet.x > Screen_Width or npc_bullet.x < 0 or npc_bullet.y > Screen_Height or npc_bullet.y < 0 and NPC_Bullet_Deleted is False:
-            NPC_Bullet_array.remove(npc_bullet)
-            NPC_Bullet_Deleted = True
-
-        if BallCollosion(player_rad, npc_bullet.Bullet_rad, npc_bullet.x, npc_bullet.y, player_x, player_y) and NPC_Bullet_Deleted is False:
-            NPC_Bullet_array.remove(npc_bullet)
-            Player_Health += -npc_bullet.Damage
-            NPC_Bullet_Deleted = True
-
-        if pygame.time.get_ticks() - npc_bullet.Exist_time > Exist_time and NPC_Bullet_Deleted is False:
-            NPC_Bullet_array.remove(npc_bullet)
-
-        npc_bullet.Position()
+        bullet.Move()
 
     ''' NPCs '''
-    for npc_1 in NPC_1_array:
+    #Wave Spawning
+    if len(Bot_array) == 0 and reason_bot is False:
+        reason_bot = True
+        delay_bot = pygame.time.get_ticks()
+
+    if len(Bot_array) == 0 and pygame.time.get_ticks() - delay_bot > wave_delay:
+        reason_bot = False
+        wave_number += 1
+        for thing in range(0, wave_number):
+            #Bot 1
+            bot = Bot(0)
+            Bot_array.append(bot)
+
+            #Bot 2
+            if thing%2 == 0:
+                bot = Bot(1)
+                Bot_array.append(bot)
+
+            #Bot 3
+            if thing%3 == 0:
+                bot = Bot(2)
+                Bot_array.append(bot)
+
+            #Bot 4
+            if thing > 4 and thing%4 == 0:
+                bot = Bot(3)
+                Bot_array.append(bot)
+
+            #Bot 5
+            if thing > 5 and thing%5 == 0:
+                bot = Bot(4)
+                Bot_array.append(bot)
+
+    #Updating them
+    for bot in Bot_array:
         if freeze is False:
-            if BallCollosion(player_rad, npc_1.Shoot_dist, npc_1.x, npc_1.y, player_x, player_y) is True and counter%npc_1.Shoot_rate == 0:
-                diffx_npc = npc_1.x - player_x
-                diffy_npc = npc_1.y - player_y
-                npc_bullet = Bullet(npc_1.x, npc_1.y, diffx_npc + randint(-abs(int(npc_1.Bullet_spray*diffx_npc)),abs(int(npc_1.Bullet_spray*diffx_npc))), diffy_npc + randint(-abs(int(npc_1.Bullet_spray*diffy_npc)), abs(int(npc_1.Bullet_spray*diffy_npc))), 5, black, npc_1.Bullet_speed, npc_1.Bullet_Damage, pygame.time.get_ticks(), 0, 0)
-                NPC_Bullet_array.append(npc_bullet)
+            bot.Move(Bot)
+            #Should the bot Shoot
+            if Balls(player_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True and counter%Bot[bot.type][6] == 0:
+                bullet = (Bot[bot.type][8], bullet_size, bot_bullet_colour, bot.x, bot.y, (bot.x - player_x), (bot.y - player_y), 2)
+                Bullet_array.append(bullet)
 
-            if mouse_state[2] == 1 and Sheild is True and BallCollosion(sheild_rad, npc_1.Radius, npc_1.x, npc_1.y, player_x, player_y) is True and  mouse_state != False:
-                npc_1.x += (-player_x + sheild_rad + npc_1.x - npc_1.Radius)
-                npc_1.y += (-player_y + sheild_rad + npc_1.y - npc_1.Radius)
-                if powerup_active2 is False:
-                    Sheild_Health += -npc_1.Sheild_Damage
-                else:
-                    npc_1.Health += -powerup_sheild_melee
+            #Collosion with Sheild
+            if Balls(sheild_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True and sheild_active is True:
+                #Create a function for deflections of ball on ball
+                sheild_health += -Bot[bot.type][5]
 
-            if BallCollosion(player_rad, npc_1.Radius, npc_1.x-5, npc_1.y-10, player_x, player_y) is True:
-                npc_1.x += (-player_x + player_rad + npc_1.x - npc_1.Radius)
-                npc_1.y += (-player_y + player_rad + npc_1.y - npc_1.Radius)
-                Player_Health += -npc_1.Melee_Damage
+            #Collosion with Player
+            elif Balls(player_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True:
+                 #Create a function for deflections of ball on ball
+                 player_health += -Bot[bot_type][10]
 
             for block in Block_array:
-                npc_1.x, npc_1.y, npc_1.Velocity_x, npc_1.Velocity_y, Hit = Collosion(Block_size, npc_1.Radius, npc_1.x, npc_1.y, block.x, block.y, npc_1.Velocity_x, npc_1.Velocity_y)
+                bot.x, bot.y, bot.velocity_x, bot.velocity_y, Hit = Blocks(block_size, Bot[bot.type][0], bot.x, bot.y, block.x, block.y, bot.velocity_x, bot.velocity_y)
                 if Hit is True:
-                    block.Health += -npc_1.Block_Damage
+                    block.health += -bot[bot.type][11]
+                    if block.Health <= 0:
+                        position[int(block.x/block_size)][int(block.y/block_size)] = 0
+                        Block_array.remove(block)
 
             for shop in Shop_array:
-                npc_1.x, npc_1.y, npc_1.Velocity_x, npc_1.Velocity_y, NaN = Collosion(Block_size, npc_1.Radius, npc_1.x, npc_1.y, block.x, block.y, npc_1.Velocity_x, npc_1.Velocity_y)
-
-            npc_1.Movement()
+                bot.x, bot.y, bot.velocity_x, bot.velocity_y, _ = Blocks(block_size, Bot[bot.type][0], bot.x, bot.y, block.x, block.y, bot.velocity_x, bot.velocity_y)
         else:
-            npc_1.Still()
+            bot.Still(Bot)
 
-        myfont = pygame.font.SysFont('Comic Sans MS', 10)
-        textsurface = myfont.render(str(int(npc_1.Health)), False, HealthColour)
-        Screen.blit(textsurface,(npc_1.x-10, npc_1.y-5))
+    ''' PowerUps '''
+    #Spawning the Powerups
+    if len(Powerup_array) == 0 and reason_powerup is False:
+        reason_powerup = True
+        delay_powerup = pygame.time.get_ticks()
 
-        #Collosions with PLayer_Bullet
-        for player_bullet in Player_Bullet_array:
-            if BallCollosion(npc_1.Radius, Bullet_rad, npc_1.x, npc_1.y, player_bullet.x, player_bullet.y) is True:
-                Player_Bullet_array.remove(player_bullet)
-                npc_1.Health += -player_bullet.Damage
-
-        #Checking if the NPC should die
-        if npc_1.Health <= 0:
-            money = Objects(npc_1.x, npc_1.y, 5, 0, yellow)
-            Money_array.append(money)
-            NPC_Number += 1
-            Player_Health += 10
-            Sheild_Health += 10
-            Blocks_given += 1
-            NPC_1_array.remove(npc_1)
-
-    ''' Power Ups '''
-    if pygame.time.get_ticks() - last_powerup > powerup_extent:
-        powerup_active1 = powerup_active2 = False
-
-    if powerup_active1 is False and powerup_active2 is False and pygame.time.get_ticks() - last_powerup > powerup_spacing and len(Powerup_array) == 0:
+    if len(Powerup_array) == 0 and pygame.time.get_ticks() - delay_powerup > powerup_delay:
+        reason_powerup = False
         while True:
-            power_x = choice(X_range)
-            power_y = choice(Y_range)
-            if positions[int(power_x/Block_size)][int(power_y/Block_size)] == 0:
-                positions[int(power_x/Block_size)][int(power_y/Block_size)] = 1
+            powerup_x = random.choice(x_range)
+            powerup_y = random.choice(y_range)
+            if position[int(powerup_x/block_size)][int(powerup_y/block_size)] == 0:
+                position[int(powerup_x/block_size)][int(powerup_y/block_size)] = 1
+                pickone = random.randint(0,2)
+                powerup = Object(power_x, power_y, Powerup[pickone][1], 1, Powerup[pickone][0])
+                Powerup_array.append(powerup)
                 break
 
-        pickone = randint(1,3)
-        if pickone == 1:
-            powerup = Objects(power_x, power_y, power1['Size'], 1, power1['Colour'])
-            Powerup_array.append(powerup)
-        if pickone == 2:
-            powerup = Objects(power_x, power_y, power2['Size'], 2, power2['Colour'])
-            Powerup_array.append(powerup)
-        if pickone == 3:
-            powerup = Objects(power_x, power_y, power3['Size'], 3, power3['Colour'])
-            Powerup_array.append(powerup)
-
+    #Activating Powerups
     for powerup in Powerup_array:
-        powerup.Powerup()
-        if powerup.type == 1 and player_x - player_rad < powerup.x + Block_size/2 < player_x + player_rad and player_y - player_rad < powerup.y + Block_size/2 < player_y + player_rad:
-            positions[int(powerup.x/Block_size)][int(powerup.y/Block_size)] = 0
-            last_powerup = pygame.time.get_ticks()
-            powerup_active1 = True
+        if Balls(player_rad, Powerup[powerup.type][2], powerup.x, powerup.y, player_x, player_y) is True:
+            position[int(powerup.x/block_size)][int(powerup.y/block_size)] = 0
+            powerup_active_time = pygame.time.get_ticks()
+            powerup_active = powerup.type
             Powerup_array.remove(powerup)
-        if powerup.type == 2 and player_x - player_rad < powerup.x + Block_size/2 < player_x + player_rad and player_y - player_rad < powerup.y + Block_size/2 < player_y + player_rad:
-            positions[int(powerup.x/Block_size)][int(powerup.y/Block_size)] = 0
-            last_powerup = pygame.time.get_ticks()
-            powerup_active2 = True
-            Powerup_array.remove(powerup)
-        if powerup.type == 3 and player_x - player_rad < powerup.x + Block_size/2 < player_x + player_rad and player_y - player_rad < powerup.y + Block_size/2 < player_y + player_rad:
-            positions[int(powerup.x/Block_size)][int(powerup.y/Block_size)] = 0
-            last_powerup = pygame.time.get_ticks()
-            battle_moon = True
-            battle_moon_level += 1
-            battle_moon_health += 100
-            Powerup_array.remove(powerup)
+            if powerup_active == 1:
+                sheild_colour = magenta
+            elif powerup_active == 2:
+                sheild_colour = oragne
 
-    ''' Battle moon Powerup '''
-    if battle_moon_health > 0 and battle_moon is True:
-        diffx = diffy = 2000
-        angle += 7
-        if angle >= 360:
-            angle = 0
+        if pygame.time.get_ticks() - powerup_active_time > powerup_extent:
+            sheild_colour = green
+            powerup_active = 0
 
-        orb_x = player_x + battle_moon_radius*math.cos(math.radians(angle))
-        orb_y = player_y + battle_moon_radius*math.sin(math.radians(angle))
+        powerup.Powerup(Powerup)
 
-        if battle_moon_level == 1:
-            pygame.draw.circle(Screen, grey, (int(orb_x), int(orb_y)), 7, 0)
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 2)
-        if battle_moon_level == 2:
-            pygame.draw.circle(Screen, green, (int(orb_x), int(orb_y)), 7, 0)
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 2)
-        if battle_moon_level == 3:
-            pygame.draw.circle(Screen, yellow, (int(orb_x), int(orb_y)), 7, 0)
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 2)
-        if battle_moon_level == 4:
-            pygame.draw.circle(Screen, orange, (int(orb_x), int(orb_y)), 7, 0)
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 2)
-        if battle_moon_level == 5:
-            pygame.draw.circle(Screen, red, (int(orb_x), int(orb_y)), 7, 0)
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 2)
-        if battle_moon_level >= 6:
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 0)
-            pygame.draw.circle(Screen, black, (int(orb_x), int(orb_y)), 7, 2)
+    #Battlemoon level
+    if powerup_active == 3:
+        battlemoon_health += 50
+        battlemoon_level += 1
+        powerup_active = 0
 
-        for npc_1 in NPC_1_array:
-            temp_diffx = orb_x - npc_1.x
-            temp_diffy = orb_y - npc_1.y
+    if battlemoon_level > 0:
+        #Moving the Moon
+        battlemoon_angle += 7
+        if battlemoon_angle >= 360:
+            battlemoon_active = 0
+        if battlemoon_level > 6:
+            battlemoon_health += 50
+            battlemoon_level = 6
+        battlemoon_x = player_x + battlemoon_orbit*math.cos(math.radians(battlemoon_angle))
+        battlemoon_y = player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle))
 
-            if BallCollosion(battle_moon_radius, npc_1.Radius, int(orb_x), int(orb_y), npc_1.x, npc_1.y) is True:
-                battle_moon_health += -npc_1.Melee_Damage/2
+        #Drawing
+        pygame.draw.circle(screen, Battlemoon[battlemoon_level][5], (int(battlemoon_x), int(battlemoon_y)), 7, 0)
+        pygame.draw.circle(screen, black, (int(battlemoon_x), int(battlemoon_y)), 7, 2)
 
-            if math.hypot(temp_diffx, temp_diffy) < math.hypot(diffx, diffy):
-                diffx = temp_diffx
-                diffy = temp_diffy
+        #Finding the Closest Bot
+        distance = Battlemoon[battlemoon_level][2]
+        battlemoon_shoot = False
+        for bot in Bot_array:
+            temp_distance_x = battlemoon_x - bot.x
+            temp_distance_y = battlemoon_y - bot.y
+            temp_distance = math.hypot(distance_x, distance_y)
+            if temp_distance < distance:
+                battlemoon_shoot = True
+                distance_x = temp_distance_x
+                distance_y = temp_distance_y
 
-        if math.hypot(diffx, diffy) < battle_moon_shoot:
-            if battle_moon_level == 1 and counter%30 == 0: #SMG
-                player_bullet = Bullet(orb_x, orb_y, diffx + randint(-abs(int(weapon1['Spray']*diffx)),abs(int(weapon1['Spray']*diffx))), diffy + randint(-abs(int(weapon1['Spray']*diffy)),abs(int(weapon2['Spray']*diffy))), Bullet_rad, green, weapon1['Speed'], weapon1['Damage']/3, pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-            if battle_moon_level == 2 and counter%15 == 0: #SMG
-                player_bullet = Bullet(orb_x, orb_y, diffx + randint(-abs(int(weapon1['Spray']*diffx)),abs(int(weapon1['Spray']*diffx))), diffy + randint(-abs(int(weapon1['Spray']*diffy)),abs(int(weapon2['Spray']*diffy))), Bullet_rad, green, weapon1['Speed'], weapon1['Damage']/2, pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-            if battle_moon_level == 3 and counter%30 == 0: #Shotgun
-                player_bullet = Bullet(orb_x, orb_y, diffx, diffy, Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-                player_bullet = Bullet(orb_x, orb_y, diffx - abs(diffy*Shotgun_Spread_ang), diffy - abs(diffx*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage']/1.5, pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-                player_bullet = Bullet(orb_x, orb_y, diffx + abs(diffy*Shotgun_Spread_ang), diffy + abs(diffx*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage']/1.5, pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-            if battle_moon_level == 4 and counter%15 == 0: #Shotgun
-                player_bullet = Bullet(orb_x, orb_y, diffx, diffy, Bullet_rad, green, weapon3['Speed'], weapon3['Damage'],pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-                player_bullet = Bullet(orb_x, orb_y, diffx - abs(diffy*Shotgun_Spread_ang), diffy - abs(diffx*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-                player_bullet = Bullet(orb_x, orb_y, diffx + abs(diffy*Shotgun_Spread_ang), diffy + abs(diffx*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-                player_bullet = Bullet(orb_x, orb_y, diffx - 2*abs(diffy*Shotgun_Spread_ang), diffy - 2*abs(diffx*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-                player_bullet = Bullet(orb_x, orb_y, diffx + 2*abs(diffy*Shotgun_Spread_ang), diffy + 2*abs(diffx*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-            if battle_moon_level == 5 and counter%30 == 0: #Rifle
-                player_bullet = Bullet(orb_x, orb_y, diffx + randint(-abs(int(weapon2['Spray']*diffx)),abs(int(weapon2['Spray']*diffx))), diffy + randint(-abs(int(weapon2['Spray']*diffy)),abs(int(weapon2['Spray']*diffy))), Bullet_rad, green, weapon2['Speed'], weapon2['Damage']/2, pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
-            if battle_moon_level >= 6 and counter%15 == 0: #Rifle
-                player_bullet = Bullet(orb_x, orb_y, diffx + randint(-abs(int(weapon2['Spray']*diffx)),abs(int(weapon2['Spray']*diffx))), diffy + randint(-abs(int(weapon2['Spray']*diffy)),abs(int(weapon2['Spray']*diffy))), Bullet_rad, green, weapon2['Speed'], weapon2['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-                Player_Bullet_array.append(player_bullet)
+        #Shooting
+        if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][1] is False:
+                bullet = Bullet(Battlemoon[battlemoon_level][6], bullet_size, green, battlemoon_x, battlemoon_y, distance_x, distance_y, 1)
+                Bullet_array.append(bullet)
 
-        if battle_moon_health <= 0:
-            battle_moon_level = 0
-            battle_moon = False
+        #Health
+        if battlemoon_health <= 0:
+            battlemoon_level = 0
 
-    ''' Turrets '''
+    ''' Shop '''
+    #Spawning
+    if len(Shop_array) == 0:
+        while True:
+            shop_x = random.choice(x_range)
+            shop_y = random.choice(y_range)
+            if position[int(shop_x/block_size)][int(shop_y/block_size)] == 0:
+                position[int(shop_x/block_size)][int(shop_y/block_size)] = 1
+                shop = Object(shop_x, shop_y, block_size, blue, 1)
+                Shop_array.append(shop)
+                break
+
+    #Updating
+    for shop in Shop_array:
+        shop.Block()
+
+        if Blocks()
+            position[int(shop.x/block_size)][int(shop.y/block_size)] = 0
+            Shop_array.remove(shop)
+
+    ''' Turret '''
     for turret in Turret_array:
-        turret.Turret()
-        turret_diffx = turret_diffy = 2000
-        for npc_1 in NPC_1_array:
-            temp_turret_diffx = turret.x - npc_1.x
-            temp_turret_diffy = turret.y - npc_1.y
-            if math.hypot(temp_turret_diffx, temp_turret_diffy) < math.hypot(turret_diffx, turret_diffy):
-                turret_diffx = temp_turret_diffx
-                turret_diffy = temp_turret_diffy
-            if BallCollosion(turret.Size, npc_1.Radius, npc_1.x, npc_1.y, turret.x + Block_size/2, turret.y + Block_size/2) is True:
-                npc_1.x += (-turret.x + turret.Size + npc_1.x - npc_1.Radius)
-                npc_1.y += (-turret.y + turret.Size + npc_1.y - npc_1.Radius)
-                turret.Health += -npc_1.Melee_Damage
+        #Finding the Closest Bot
+        turret_shoot = False
+        distance = Turret[turret.type][3]
+        for bot in Bot_array:
+            temp_distance_x = battlemoon_x - bot.x
+            temp_distance_y = battlemoon_y - bot.y
+            temp_distance = math.hypot(distance_x, distance_y)
+            if temp_distance < distance:
+                turret_shoot = True
+                distance_x = temp_distance_x
+                distance_y = temp_distance_y
 
-        if math.hypot(turret_diffx, turret_diffy) < 400 and counter%turret.shootrate == 0:
-            player_bullet = Bullet(turret.x, turret.y, turret_diffx + randint(-abs(int(weapon1['Spray']*turret_diffx)),abs(int(weapon1['Spray']*turret_diffx))), turret_diffy + randint(-abs(int(weapon1['Spray']*turret_diffy)),abs(int(weapon1['Spray']*turret_diffy))), Bullet_rad, green, 1.3*weapon1['Speed'], 2*weapon1['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
+        #Shooting
+        if turret_shoot is True and counter%Turret[turret.type][1] == 0:
+            bullet = Bullet(Turret[turret.type][5], player_bullet_colour, turret.x, turret.y, distance_x, distance_y, 1)
+            Bullet_array.append(bullet)
 
-        if turret.Health <= 0:
-            positions[int(turret.x/Block_size)][int(turret.y/Block_size)] = 0
-            Turret_array.remove(turret)
+        #Collisions
+        for bot in Bot_array:
+            if Balls(turret.size, Bot[bot.type][1], bot.x, bot.y, turret.x, turret.y):
+                turret.health +=  -Bot[bot.type][11]
+                if turret.health <= 0:
+                    position[int(turret.x/block_size)][int(turret.x/block_size)] = 0
+                    Turret_array.remove(remove)
 
-    ''' Blocks '''
-    for block in Block_array:
-        block.Block()
-        if block.Health < 0:
-            positions[int(block.x/Block_size)][int(block.y/Block_size)] = 0
-            Block_array.remove(block)
-        elif mouse_state[2] == 1:
-            player_x, player_y, xspeed, yspeed, NaN = Collosion(Block_size, sheild_rad, player_x, player_y, block.x, block.y, xspeed, yspeed)
-        else:
-            player_x, player_y, xspeed, yspeed, NaN = Collosion(Block_size, player_rad, player_x, player_y, block.x, block.y, xspeed, yspeed)
+        turret.Turret(Turret)
 
     ''' Money '''
     for money in Money_array:
         money.Money(player_x, player_y)
-        if BallCollosion(money.Size, player_rad, player_x, player_y, money.x, money.y) is True:
-            Player_money += money.Value
+        if Balls(money.size, player_rad, player_x, player_y, money.x, money.y) is True:
+            player_money += 10
             Money_array.remove(money)
 
-    ''' Shop '''
-    for shop in Shop_array:
-        shop.Block()
-        player_x, player_y, NaN, NaN, Shopping = Collosion(Block_size, player_rad, player_x, player_y, shop.x, shop.y, xspeed, yspeed)
-        if Shopping is True:
-            end_shop = False
-            while end_shop is False:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        quit()
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESCAPE:
-                            Shop_array.remove(shop)
-                            end_shop = True
-                    if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
-                        mouse_state = pygame.mouse.get_pressed()
-                        bought = False
+    ''' Block '''
+    for block in Block_array:
+        block.Block()
+        if mouse_state[2] == 1:
+            player_x, player_y, player_speedx, player_speedy, _ = Blocks(block_size, sheild_rad, player_x, player_y, block.x, block.y, player_speedx, player_speedy)
+        else:
+            player_x, player_y, player_speedx, player_speedy, _ = Blocks(block_size, player_rad, player_x, player_y, block.x, block.y, player_speedx, player_speedy)
 
-                myfont = pygame.font.SysFont('Comic Sans MS', 25)
-                text = myfont.render('  Money:$'+str(Player_money)+'   Players Health:'+str(Player_Health)+'   Sheilds Health:'+str(Sheild_Health)+'   Turrets Available:'+str(Turret_given)+'   Rifle Owned:'+str(weapon2exist)+'   Shotgun Owned:'+str(weapon3exist), False, black)
-                Screen.blit(text,(0,0))
-
-                mouse_pos = pygame.mouse.get_pos()
-                pygame.draw.rect(Screen, red, (60, 60, Shop_block, Shop_block), Solid)
-                pygame.draw.rect(Screen, black, (60, 60, Shop_block, Shop_block), 2)
-                text = myfont.render(' '+Item1['Name'], False, black)
-                Screen.blit(text,(60,60))
-                text = myfont.render(' $'+str(Item1['Cost']), False, black)
-                Screen.blit(text,(60,90))
-                pygame.draw.rect(Screen, yellow, (240, 60, Shop_block, Shop_block), Solid)
-                pygame.draw.rect(Screen, black, (240, 60, Shop_block, Shop_block), 2)
-                text = myfont.render(' '+Item2['Name'], False, black)
-                Screen.blit(text,(240,60))
-                text = myfont.render(' $'+str(Item2['Cost']), False, black)
-                Screen.blit(text,(240,90))
-                pygame.draw.rect(Screen, pink, (420, 60, Shop_block, Shop_block), Solid)
-                pygame.draw.rect(Screen, black, (420, 60, Shop_block, Shop_block), 2)
-                text = myfont.render(' '+Item3['Name'], False, black)
-                Screen.blit(text,(420,60))
-                text = myfont.render(' $'+str(Item3['Cost']), False, black)
-                Screen.blit(text,(420,90))
-                pygame.draw.rect(Screen, green, (600, 60, Shop_block, Shop_block), Solid)
-                pygame.draw.rect(Screen, black, (600, 60, Shop_block, Shop_block), 2)
-                text = myfont.render(' '+Item4['Name'], False, black)
-                Screen.blit(text,(600,60))
-                text = myfont.render(' $'+str(Item4['Cost']), False, black)
-                Screen.blit(text,(600,90))
-                pygame.draw.rect(Screen, magenta, (780, 60, Shop_block, Shop_block), Solid)
-                pygame.draw.rect(Screen, black, (780, 60, Shop_block, Shop_block), 2)
-                text = myfont.render(' '+Item5['Name'], False, black)
-                Screen.blit(text,(780,60))
-                text = myfont.render(' $'+str(Item5['Cost']), False, black)
-                Screen.blit(text,(780,90))
-
-                if 60 < mouse_pos[0] < 180 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item1['Cost'] and weapon2exist is False and bought is False :
-                    Player_money += -Item1['Cost']
-                    bought = weapon2exist = True
-                elif 240 < mouse_pos[0] < 360 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item2['Cost'] and weapon3exist is False and bought is False:
-                    Player_money += -Item2['Cost']
-                    bought = weapon3exist = True
-                elif 420 < mouse_pos[0] < 540 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item3['Cost'] and bought is False:
-                    Player_money += -Item3['Cost']
-                    Turret_given += 1
-                    bought = True
-                elif 600 < mouse_pos[0] < 720 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item4['Cost'] and weapon3exist is False and bought is False:
-                    Player_money += -Item4['Cost']
-                    Player_Health += 10
-                    bought  = True
-                elif 780 < mouse_pos[0] < 900 and 60 < mouse_pos[1] < 180 and mouse_state[0] == 1 and Player_money >= Item5['Cost'] and bought is False:
-                    Player_money += -Item5['Cost']
-                    Sheild_Health += 10
-                    bought = True
-
-                pygame.display.flip()
-                pygame.display.set_caption('The Shop')
-                Screen.fill(white)
-
-    ''' Player '''
     #Collosion with Boundary
     if player_x < player_rad:
         player_x = player_rad
     elif  player_y < player_rad:
         player_y = player_rad
-    elif player_x > Screen_Width - player_rad:
-        player_x = Screen_Width - player_rad
-    elif  player_y > Screen_Height - player_rad:
-        player_y = Screen_Height - player_rad
+    elif player_x > screen_width - player_rad:
+        player_x = screen_width - player_rad
+    elif  player_y > screen_height - player_rad:
+        player_y = screen_height - player_rad
 
-    if Player_Health > 0:
-        pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),player_rad, Solid)
-        pygame.draw.circle(Screen,black,(int(player_x),int(player_y)),player_rad, 2)
-    else:
-        print('You only killed '+str(NPC_Number - 1)+' Bots, Pls Git Gud')
-        break
-
-    Sheild = False
-    mouse_pos = pygame.mouse.get_pos()
-    mouse_x = player_x - mouse_pos[0]
-    mouse_y = player_y - mouse_pos[1]
-
-    if mouse_state != False and mouse_state[2] == 1:
-        if Sheild_Health > 0:
-            if powerup_active2 is False:
-                pygame.draw.circle(Screen,green,(int(player_x),int(player_y)),sheild_rad, 3)
-            else:
-                pygame.draw.circle(Screen,pink,(int(player_x),int(player_y)),sheild_rad, 2)
-                pygame.draw.circle(Screen,orange,(int(player_x),int(player_y)),sheild_rad+3, 2)
-                pygame.draw.circle(Screen,red,(int(player_x),int(player_y)),sheild_rad+3, 2)
-            Sheild = True
-            Melee_Damage = 0
-        elif Sheild_Health < 0:
-            Sheild = False
-            Melee_Damage = 30
-
-    Sheild_Shoot = Sheild
-    if powerup_active1 is True:
-        Sheild_Shoot = False
-
-    if mouse_state[0] == 1 and mouse_x != 0 and mouse_y != 0 and Sheild_Shoot is False:
-        #SMG
-        if weapon == 1 and pygame.time.get_ticks() - lastfired_smg > weapon1['FireRate']:
-            lastfired_smg = pygame.time.get_ticks()
-            player_bullet = Bullet(player_x, player_y, mouse_x + randint(-abs(int(weapon1['Spray']*mouse_x)),abs(int(weapon1['Spray']*mouse_x))), mouse_y + randint(-abs(int(weapon1['Spray']*mouse_y)),abs(int(weapon1['Spray']*mouse_y))), Bullet_rad, green, weapon1['Speed'], weapon1['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-        #Rifle
-        if weapon == 2 and pygame.time.get_ticks() - lastfired_rifle > weapon2['FireRate']:
-            lastfired_rifle = pygame.time.get_ticks()
-            player_bullet = Bullet(player_x, player_y, mouse_x + randint(-abs(int(weapon2['Spray']*mouse_x)),abs(int(weapon2['Spray']*mouse_x))), mouse_y + randint(-abs(int(weapon2['Spray']*mouse_y)),abs(int(weapon2['Spray']*mouse_y))), Bullet_rad, green, weapon2['Speed'], weapon2['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-        #Shotgun
-        if weapon == 3 and pygame.time.get_ticks() - lastfired_shotgun > weapon3['FireRate']:
-            lastfired_shotgun = pygame.time.get_ticks()
-            player_bullet = Bullet(player_x, player_y, mouse_x, mouse_y, Bullet_rad, green, weapon3['Speed'], weapon3['Damage'],pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-            player_bullet = Bullet(player_x, player_y, mouse_x - abs(mouse_y*Shotgun_Spread_ang), mouse_y - abs(mouse_x*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-            player_bullet = Bullet(player_x, player_y, mouse_x - 2*abs(mouse_y*Shotgun_Spread_ang), mouse_y - 2*abs(mouse_x*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-            player_bullet = Bullet(player_x, player_y, mouse_x + abs(mouse_y*Shotgun_Spread_ang), mouse_y + abs(mouse_x*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-            player_bullet = Bullet(player_x, player_y, mouse_x + 2*abs(mouse_y*Shotgun_Spread_ang), mouse_y + 2*abs(mouse_x*Shotgun_Spread_ang), Bullet_rad, green, weapon3['Speed'], weapon3['Damage'], pygame.time.get_ticks(), xspeed, yspeed)
-            Player_Bullet_array.append(player_bullet)
-        #Freeze
-        if weapon == 4 and pygame.time.get_ticks() - lastfired_freeze > weapon4['FireRate']:
-            lastfired_freeze = pygame.time.get_ticks()
-            freeze = True
-            weapon = last_weapon
-        #Homing
-        if weapon == 6 and  pygame.time.get_ticks() - lastfired_homing > weapon6['FireRate']:
-            lastfired_homing = pygame.time.get_ticks()
-
-
-    ''' Writing the Stats '''
-    if weapon4['FireRate'] - pygame.time.get_ticks() + lastfired_freeze > 0:
-        freeze_left = int((weapon4['FireRate'] - pygame.time.get_ticks() + lastfired_freeze)/1000)
-    else:
-        freeze_left = 0
-
-    myfont = pygame.font.SysFont('Comic Sans MS', 25)
-    textsurface = myfont.render('   Money:$'+str(Player_money)+'   Players Health:'+str(Player_Health)+'  Sheilds Health:'+str(Sheild_Health)+'  NPC Number:'+str(len(NPC_1_array))+'  Blocks Available:'+str(Blocks_given)+'  Freeze:'+str(freeze_left)+'  Turrets Available:'+str(Turret_given), False, black)
-    Screen.blit(textsurface,(0,0))
+    pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
+    pygame.draw.circle(screen, black ,(int(player_x), int(player_y)), player_rad, 2)
 
     ''' Updating Changes to the Screen '''
     pygame.display.flip()
     pygame.display.set_caption('The Battleground')
-    Screen.fill(white)
+    screen.fill(white)
     Clock.tick(fps)
