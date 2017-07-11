@@ -59,9 +59,9 @@ sheild_rad = 30
 bullet_size = 5
 
 #Fonts
-bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
-wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
 weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
+wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
+bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
 
 #Timing
 bullet_exist_time = 7000
@@ -72,7 +72,6 @@ powerup_delay = 30000
 wave_delay = 20000
 dash_time = 300
 
-
 ''' Initializing Shite '''
 Powerup_array = []
 Bullet_array = []
@@ -82,33 +81,20 @@ Money_array = []
 Shop_array = []
 Bot_array = []
 
-finished = key_state = weapon_state = dash = freeze = reason_bot = reason_powerup = False
+finished = weapon_state = dash = freeze = reason_bot = reason_powerup = False
 
-battlemoon_angle = last_dash = player_speedx = player_speedy = powerup_active = wave_number = powerup_active_time = 0
-weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = battlemoon_level = wave_time = 0
+battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = 0
+weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = battlemoon_level = 0
 counter = last_weapon =  turret_level = 1
+wave_time = -wave_time_length
+powerup_active = 3
 
-mouse_state = (0,0,0)
+mouse_state = list(pygame.mouse.get_pressed())
+key_state = list(pygame.key.get_pressed())
 
 weapon_name = 'SMG'
 
-''' Dictionaries '''
-Bot = [
-    #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
-    [15, 6,  blue,    100, 5,  1,  10, 200, 8, 0.5, 2, 0.1], #Default        0
-    [10, 10, grey,    20,  5,  15, 4,  30,  6, 0.5, 2, 0.1], #Sheild-Breaker 1
-    [19, 4,  magenta, 300, 7,  2,  10, 200, 6, 0.5, 2, 0.1], #Doc            2
-    [10, 3,  green,   200, 20, 2,  30, 600, 8, 0.5, 2, 0.1], #Sniper         3
-    [15, 3,  yellow,  100, 2,  1,  10, 200, 8, 0.5, 2, 0.1]] #Block-Breaker  4
-
-Weapon = [
-    #Damage, Speed, Spray, Firerate, Name
-    [4,   8,  0.1,  100,   'SMG'    ], #SMG     0
-    [100, 25, 0.01, 1000,  'Sniper' ], #Sniper  1
-    [25,  15, 0.1,  1000,  'Shotgun'], #Shotgun 2
-    [50,  15, 0,    2000,  'Homing' ], #Homing  3
-    [0,   0,  0,    30000, 'Freeze' ]] #Freeze  4
-
+''' Dictionaries (Well Matrices) '''
 Powerup = [
     #Colour, Radius, Active, Draw
     [orange, 10], #Sheild and Shoot 0
@@ -125,13 +111,6 @@ Shop = [
     ['Battlemoon', 200], #5
     ['Block',      150]] #6
 
-Turret = [
-    #Shootrate, Damage, Range, Spray, Speed, Colour
-    [30,  5,  400,  0.2,  8 , grey  ], #Turret0
-    [15,  18, 600,  0.01, 14, orange], #Turret1
-    [15,  35, 800,  0,    18, red   ], #Turret2
-    [10,  80, 1000, 0,    25, black ]] #Turret3
-
 Battlemoon = [
     #Shootrate, Damage, Range, Spray, Colour, Speed
     [30, 4,  300, 0.2,  grey  , 8 ], #Level0
@@ -140,6 +119,29 @@ Battlemoon = [
     [15, 25, 600, 0.05, orange, 14], #Level3
     [10, 35, 700, 0.01, red   , 16], #Level4
     [10, 50, 800, 0,    black , 18]] #Level5
+
+Turret = [
+    #Shootrate, Damage, Range, Spray, Speed, Colour
+    [30,  5,  400,  0.2,  8 , grey  ], #Turret0
+    [15,  18, 600,  0.01, 14, orange], #Turret1
+    [15,  35, 800,  0,    18, red   ], #Turret2
+    [10,  80, 1000, 0,    25, black ]] #Turret3
+
+Weapon = [
+    #Damage, Speed, Spray, Firerate, Name
+    [4,   8,  0.1,  100,   'SMG'    ], #SMG     0
+    [100, 25, 0.01, 1000,  'Sniper' ], #Sniper  1
+    [25,  15, 0.1,  1000,  'Shotgun'], #Shotgun 2
+    [50,  15, 0,    2000,  'Homing' ], #Homing  3
+    [0,   0,  0,    30000, 'Freeze' ]] #Freeze  4
+
+Bot = [
+    #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
+    [15, 6,  blue,    100, 5,  1,  10, 200, 8, 0.5, 2, 0.1], #Default        0
+    [10, 10, grey,    20,  5,  15, 4,  30,  6, 0.5, 2, 0.1], #Sheild-Breaker 1
+    [19, 4,  magenta, 300, 7,  2,  10, 200, 6, 0.5, 2, 0.1], #Doc            2
+    [10, 3,  green,   200, 20, 2,  30, 600, 8, 0.5, 2, 0.1], #Sniper         3
+    [15, 3,  yellow,  100, 2,  1,  10, 200, 8, 0.5, 2, 0.1]] #Block-Breaker  4
 
 ''' Collision Functions '''
 def Blocks(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
@@ -266,12 +268,15 @@ while True:
             pygame.quit()
 
         ''' User Inputs '''
+        #Keyboard Press
         if event.type == pygame.KEYUP or event.type == pygame.KEYDOWN:
             key_state = list(pygame.key.get_pressed())
 
+        #Mouse Press
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
             mouse_state = list(pygame.mouse.get_pressed())
 
+        #Scroll Wheel
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 4:
                 weapon += -1
@@ -282,30 +287,33 @@ while True:
                 if weapon > 6:
                     weapon = 1
 
-    #Handling Weapons
-    if key_state is not False:
-        if key_state[pygame.K_1] == 1 or weapon == 1:
-            weapon = last_weapon = 1
-            weapon_name = 'SMG'
-        elif key_state[pygame.K_2] == 1 or weapon == 2:
-            weapon = last_weapon = 2
-            weapon_name = 'Sniper rifle'
-        elif key_state[pygame.K_3] == 1 or weapon == 3:
-            weapon = last_weapon = 3
-            weapon_name = 'Shotgun'
-        elif key_state[pygame.K_4] == 1 or weapon == 4:
-            weapon = last_weapon = 4
-            weapon_name = 'Homing gun'
-        elif key_state[pygame.K_5] == 1 or weapon == 5:
-            weapon = 5
-            weapon_name = 'Freeze ray'
-        elif key_state[pygame.K_6] == 1 or weapon == 6:
-            weapon = 6
-            weapon_name = 'Turrets'
+    #Weapon Selecting
+    if key_state[pygame.K_1] == 1 or weapon == 1:
+        weapon = last_weapon = 1
+        weapon_name = 'SMG'
+    elif key_state[pygame.K_2] == 1 or weapon == 2:
+        weapon = last_weapon = 2
+        weapon_name = 'Sniper rifle'
+    elif key_state[pygame.K_3] == 1 or weapon == 3:
+        weapon = last_weapon = 3
+        weapon_name = 'Shotgun'
+    elif key_state[pygame.K_4] == 1 or weapon == 4:
+        weapon = last_weapon = 4
+        weapon_name = 'Homing gun'
+    elif key_state[pygame.K_5] == 1 or weapon == 5:
+        weapon = 5
+        weapon_name = 'Freeze ray'
+    elif key_state[pygame.K_6] == 1 or weapon == 6:
+        weapon = 6
+        weapon_name = 'Turrets'
 
     ''' Player '''
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_pos_x = player_x - mouse_pos[0]
+    mouse_pos_y = player_y - mouse_pos[1]
+
     #Movement
-    if dash is False and key_state != False:
+    if dash is False:
         player_speedx = 7*(key_state[pygame.K_d] - key_state[pygame.K_a])
         player_speedy = 7*(key_state[pygame.K_s] - key_state[pygame.K_w])
         if key_state[pygame.K_SPACE] == 1:
@@ -333,10 +341,6 @@ while True:
         sheild_active = False
 
     #Weapons
-    mouse_pos = pygame.mouse.get_pos()
-    mouse_pos_x = player_x - mouse_pos[0]
-    mouse_pos_y = player_y - mouse_pos[1]
-
     if mouse_state[0] == 1 and sheild_active is False:
         #SMG
         if weapon == 1 and pygame.time.get_ticks() - weapon_1_fired > Weapon[0][3]:
@@ -379,8 +383,9 @@ while True:
 
         if position[int(block_x/block_size)][int(block_y/block_size)] == 0:
             position[int(block_x/block_size)][int(block_y/block_size)] = 1
-            block = Object(block_x, block_y, block_size, 0, grey)
+            block = Object(block_x, block_y, block_size, grey, 0)
             Block_array.append(block)
+            blocks_given += -1
             mouse_state[1] = 0
             for bot in Bot_array:
                 if block_x < bot.x < block_x + block_size and block_y < bot.y < block_y + block_size:
@@ -437,11 +442,12 @@ while True:
         #Bot Bullets
         elif bullet.type == 2:
             #Collision with sheild
-            if mouse_state[2] is True and Balls(sheild_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
+            if powerup_active == 0 or sheild_active is True and Balls(sheild_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
                 Bullet_array.remove(bullet)
 
             #Collision with player
             elif Balls(player_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
+                player_health += - Bot[bot.type][4]
                 Bullet_array.remove(bullet)
 
         bullet.Move()
@@ -489,17 +495,24 @@ while True:
             Money_array.append(money)
             Bot_array.remove(bot)
 
+        elif freeze is True:
+            bot.Still(Bot)
+
         elif freeze is False:
             #Should the bot Shoot
             if Balls(player_rad, Bot[bot.type][7], bot.x, bot.y, player_x, player_y) is True and counter%Bot[bot.type][6] == 0:
-                bullet = (Bot[bot.type][8], bullet_size, bot_bullet_colour, bot.x, bot.y, (bot.x - player_x), (bot.y - player_y), 2, 0)
+                bullet = Bullet(Bot[bot.type][8], bullet_size, bot_bullet_colour, bot.x, bot.y, (bot.x - player_x), (bot.y - player_y), 2, 0)
                 Bullet_array.append(bullet)
 
             #Collosion with Sheild
-            if Balls(sheild_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True and sheild_active is True:
+            if Balls(sheild_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True and sheild_active is True or powerup_active == 0:
                 bot.x += (-player_x + sheild_rad + bot.x - Bot[bot.type][0])
                 bot.y += (-player_y + sheild_rad + bot.y - Bot[bot.type][0])
-                sheild_health += -Bot[bot.type][5]
+                if powerup_active == 1:
+                    bot.health += -sheild_melee_damage
+                else:
+                    sheild_health += -Bot[bot.type][5]
+
 
             #Collosion with Player
             elif Balls(player_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True:
@@ -523,14 +536,11 @@ while True:
             for shop in Shop_array:
                 bot.x, bot.y, bot.velocity_x, bot.velocity_y, _ = Blocks(block_size, Bot[bot.type][0], bot.x, bot.y, block.x, block.y, bot.velocity_x, bot.velocity_y)
 
-            #Printing Bot Health
-            textsurface = bot_health_font.render(str(int(bot.health)), False, bot_health_colour)
-            screen.blit(textsurface, (bot.x-10, bot.y-5))
-
             bot.Move(Bot)
 
-        else:
-            bot.Still(Bot)
+            #Printing Bot Health
+            textsurface = bot_health_font.render(str(int(bot.health)), False, bot_health_colour)
+            screen.blit(textsurface, (bot.x - 12, bot.y - 7))
 
     ''' PowerUps '''
     #Spawning the Powerups
@@ -552,7 +562,7 @@ while True:
 
     #Activating Powerups
     for powerup in Powerup_array:
-        if Balls(player_rad, Powerup[powerup.type][1], powerup.x, powerup.y, player_x, player_y) is True:
+        if Balls(player_rad, Powerup[powerup.type][1], powerup.x + block_size/2, powerup.y + block_size/2, player_x, player_y) is True:
             position[int(powerup.x/block_size)][int(powerup.y/block_size)] = 0
             powerup_active_time = pygame.time.get_ticks()
             powerup_active = powerup.type
@@ -566,9 +576,9 @@ while True:
                 battlemoon_level += 1
                 powerup_active = 0
 
-        if powerup_active != 0 and pygame.time.get_ticks() - powerup_active_time > powerup_extent:
+        if powerup_active != 3 and pygame.time.get_ticks() - powerup_active_time > powerup_extent:
             sheild_colour = green
-            powerup_active = 0
+            powerup_active = 3
 
         powerup.Powerup(Powerup)
 
@@ -696,8 +706,16 @@ while True:
     elif  player_y > screen_height - player_rad:
         player_y = screen_height - player_rad
 
-    pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
-    pygame.draw.circle(screen, black ,(int(player_x), int(player_y)), player_rad, 2)
+    if player_health > 0:
+        #Drawing Player
+        pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
+        pygame.draw.circle(screen, black ,(int(player_x), int(player_y)), player_rad, 2)
+
+        #Writing Health
+        textsurface = bot_health_font.render(str(player_health), False, black)
+        screen.blit(textsurface, (player_x - 8, player_y - 7))
+    else:
+        death_screen_goes_here = 1
 
     ''' Writing Stats '''
     if pygame.time.get_ticks() - wave_time < wave_time_length:
@@ -705,10 +723,10 @@ while True:
         screen.blit(textsurface, (screen_width/2 - 400, screen_height/2))
 
     textsurface = weapon_selected_font.render('Weapon Selected: ' + weapon_name, False, black)
-    screen.blit(textsurface, (10, 15))
+    screen.blit(textsurface, (10, 0))
 
     ''' Updating Changes to the Screen '''
-    pygame.display.flip()
     pygame.display.set_caption('The Battleground')
+    pygame.display.flip()
     screen.fill(white)
     Clock.tick(fps)
