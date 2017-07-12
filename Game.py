@@ -41,10 +41,10 @@ block_number = 60
 shotgun_owned = False
 homing_owned = False
 rifle_owned = False
-freezes_owned = 2
+freezes_owned = 0
 player_money = 0
 blocks_given = 3
-turret_given = 2
+turret_given = 0
 weapon = 1
 
 #Shapes
@@ -52,6 +52,7 @@ player_bullet_colour = green
 bot_health_colour = white
 bot_bullet_colour = black
 sheild_colour = green
+button_size = 120
 turret_size = 18
 block_size = 40
 player_rad = 15
@@ -62,6 +63,7 @@ bullet_size = 5
 weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
 wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
 bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
+shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
 
 #Timing
 bullet_exist_time = 7000
@@ -74,6 +76,7 @@ dash_time = 300
 
 ''' Initializing Shite '''
 Powerup_array = []
+Button_array = []
 Bullet_array = []
 Turret_array = []
 Block_array = []
@@ -83,8 +86,8 @@ Bot_array = []
 
 finished = weapon_state = dash = freeze = reason_bot = reason_powerup = False
 
-battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = 0
 weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = battlemoon_level = 0
+battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = 0
 counter = last_weapon =  turret_level = 1
 wave_time = -wave_time_length
 powerup_active = 3
@@ -134,6 +137,19 @@ Weapon = [
     [25,  15, 0.1,  1000,  'Shotgun'], #Shotgun 2
     [50,  15, 0,    2000,  'Homing' ], #Homing  3
     [0,   0,  0,    30000, 'Freeze' ]] #Freeze  4
+
+Item = [
+    #x, y, colour, name, cost
+    [60,  60,  red,     'Rifle'  ,      200], #0
+    [240, 60,  yellow,  'Shotgun',      150], #1
+    [420, 60,  pink,    'Turrets',      300], #2
+    [600, 60,  green ,  'Health' ,      20 ], #3
+    [780, 60,  magenta, 'Armour' ,      20 ], #4
+    [60,  240, red,     'Battlemoon',   100], #5
+    [240, 240, yellow,  'Block',        80 ], #6
+    [420, 240, pink,    'Turret Level', 200], #7
+    [600, 240, green,   'Homing',       80 ], #6
+    [780, 240, magenta, 'Freezes',      40 ]] #7
 
 Bot = [
     #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
@@ -243,6 +259,32 @@ class Object():
         pygame.draw.circle(screen, yellow, (int(self.x), int(self.y)), self.size, 0)
         pygame.draw.circle(screen, black, (int(self.x), int(self.y)), self.size, 2)
 
+class Button():
+    def __init__(self, x, y, size, colour, name, cost, imshit):
+        self.cus = imshit
+        self.x = x
+        self.y = y
+        self.cost = cost
+        self.size = size
+        self.colour = colour
+        self.name = shop_button_font.render(name, False, black)
+        self.cost_text = shop_button_font.render('$'+str(cost), False, black)
+    def Draw(self):
+        pygame.draw.rect(screen, self.colour, (self.x, self.y, self.size, self.size), 0)
+        pygame.draw.rect(screen, black, (self.x, self.y, self.size, self.size), 2)
+        screen.blit(self.name, (self.x + 5, self.y))
+        screen.blit(self.cost_text, (self.x + 5, self.y + 30))
+    def Click(self, mouse_x, mouse_y):
+        if self.x < mouse_x < self.x + self.size and self.y < mouse_y < self.y + self.y + self.size:
+            return True
+        else:
+            return False
+
+''' Shop Generation '''
+for thingo in range(0, len(Item) - 1):
+    button = Button(Item[thingo][0], Item[thingo][1], button_size, Item[thingo][2], Item[thingo][3], Item[thingo][4], thingo)
+    Button_array.append(button)
+
 ''' Map Generation '''
 x_range = range(0, screen_width,  block_size)
 y_range = range(0, screen_height, block_size)
@@ -266,6 +308,7 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
+            quit()
 
         ''' User Inputs '''
         #Keyboard Press
@@ -291,21 +334,21 @@ while True:
     if key_state[pygame.K_1] == 1 or weapon == 1:
         weapon = last_weapon = 1
         weapon_name = 'SMG'
-    elif key_state[pygame.K_2] == 1 or weapon == 2:
+    elif rifle_owned is True and (key_state[pygame.K_2] == 1 or weapon == 2):
         weapon = last_weapon = 2
         weapon_name = 'Sniper rifle'
-    elif key_state[pygame.K_3] == 1 or weapon == 3:
+    elif shotgun_owned is True and (key_state[pygame.K_3] == 1 or weapon == 3):
         weapon = last_weapon = 3
         weapon_name = 'Shotgun'
-    elif key_state[pygame.K_4] == 1 or weapon == 4:
+    elif homing_owned is True and (key_state[pygame.K_4] == 1 or weapon == 4):
         weapon = last_weapon = 4
         weapon_name = 'Homing gun'
-    elif key_state[pygame.K_5] == 1 or weapon == 5:
-        weapon = 5
+    elif freezes_owned > 0 and (key_state[pygame.K_5] == 1 or weapon == 5):
         weapon_name = 'Freeze ray'
-    elif key_state[pygame.K_6] == 1 or weapon == 6:
-        weapon = 6
+        weapon = 5
+    elif turret_given > 0 and (key_state[pygame.K_6] == 1 or weapon == 6):
         weapon_name = 'Turrets'
+        weapon = 6
 
     ''' Player '''
     mouse_pos = pygame.mouse.get_pos()
@@ -458,6 +501,17 @@ while True:
         reason_bot = True
         delay_bot = pygame.time.get_ticks()
 
+        #Spawning Shop
+        if len(Shop_array) < 1 and wave_number > 0:
+            while True:
+                shop_x = random.choice(x_range)
+                shop_y = random.choice(y_range)
+                if position[int(shop_x/block_size)][int(shop_y/block_size)] == 0:
+                    position[int(shop_x/block_size)][int(shop_y/block_size)] = 1
+                    shop = Object(shop_x, shop_y, block_size, blue, 1)
+                    Shop_array.append(shop)
+                    break
+
     elif len(Bot_array) == 0 and pygame.time.get_ticks() - delay_bot > wave_delay:
         reason_bot = False
         wave_number += 1
@@ -512,7 +566,6 @@ while True:
                     bot.health += -sheild_melee_damage
                 else:
                     sheild_health += -Bot[bot.type][5]
-
 
             #Collosion with Player
             elif Balls(player_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True:
@@ -587,15 +640,16 @@ while True:
         #Moving the Moon
         battlemoon_angle += 7
         if battlemoon_angle >= 360:
-            battlemoon_active = 0
+            battlemoon_angle = 0
         if battlemoon_level > 6:
             battlemoon_health += 50
             battlemoon_level = 6
+
         battlemoon_x = player_x + battlemoon_orbit*math.cos(math.radians(battlemoon_angle))
         battlemoon_y = player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle))
 
         #Drawing
-        pygame.draw.circle(screen, Battlemoon[battlemoon_level][5], (int(battlemoon_x), int(battlemoon_y)), 7, 0)
+        pygame.draw.circle(screen, Battlemoon[battlemoon_level][4], (int(battlemoon_x), int(battlemoon_y)), 7, 0)
         pygame.draw.circle(screen, black, (int(battlemoon_x), int(battlemoon_y)), 7, 2)
 
         #Finding the Closest Bot
@@ -612,8 +666,8 @@ while True:
                 distance_y = temp_distance_y
 
         #Shooting
-        if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][1] is False:
-            bullet = Bullet(Battlemoon[battlemoon_level][6], bullet_size, green, battlemoon_x, battlemoon_y, distance_x, distance_y, 1, 0)
+        if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][0] is False:
+            bullet = Bullet(Battlemoon[battlemoon_level][5], bullet_size, green, battlemoon_x, battlemoon_y, distance_x, distance_y, 1, 0)
             Bullet_array.append(bullet)
 
         #Health
@@ -621,35 +675,65 @@ while True:
             battlemoon_level = 0
 
     ''' Shop '''
-    #Spawning
-    if len(Shop_array) == 0:
-        while True:
-            shop_x = random.choice(x_range)
-            shop_y = random.choice(y_range)
-            if position[int(shop_x/block_size)][int(shop_y/block_size)] == 0:
-                position[int(shop_x/block_size)][int(shop_y/block_size)] = 1
-                shop = Object(shop_x, shop_y, block_size, blue, 1)
-                Shop_array.append(shop)
-                break
-
     #Updating
     for shop in Shop_array:
         shop.Block()
 
-    '''
-        if Blocks()
-            position[int(shop.x/block_size)][int(shop.y/block_size)] = 0
-            Shop_array.remove(shop)
-            while True:
+        #Running the Shop
+        player_x, player_y, _, _, shop_collision = Blocks(block_size, player_rad, player_x, player_y, shop.x, shop.y, player_speedx, player_speedy)
+        if shop_collision is True:
+            end_shop = False
+            while end_shop is False:
                 for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-
-                if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
-                    mouse_state = list(pygame.mouse.get_pressed())
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            Shop_array.remove(shop)
+                            end_shop = True
+                    if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
+                        mouse_state = list(pygame.mouse.get_pressed())
 
                 mouse_pos = pygame.mouse.get_pos()
-    '''
+
+                for button in Button_array:
+                    button.Draw()
+
+                    if mouse_state[0] == 1 and button.Click(mouse_pos[0], mouse_pos[1]) is True:
+                        mouse_state[0] = 0
+                        if button.cus == 0 and rifle_owned is False and player_money >= int(button.cost):
+                            player_money += -button.cost
+                            rifle_owned = True
+                        elif button.cus == 1 and shotgun_owned is False and player_money >= int(button.cost):
+                            player_money += -button.cost
+                            shotgun_owned = True
+                        elif button.cus == 2 and player_money >= button.cost:
+                            player_money += -button.cost
+                            turret_given += 1
+                        elif button.cus == 3 and player_money >= button.cost:
+                            print('Health')
+                            player_money += -button.cost
+                            player_health += 15
+                        elif button.cus == 4 and player_money >= button.cost:
+                            player_money += -button.cost
+                            sheild_health += 15
+                        elif button.cus == 5 and player_money >= button.cost:
+                            player_money += -button.cost
+                            battlemoon_level += 1
+                        elif button.cus == 6 and player_money >= button.cost:
+                            player_money += -button.cost
+                            block_number += 1
+                        elif button.cus == 7 and player_money >= button.cost:
+                            player_money += -button.cost
+                            turret_level += 1
+                        elif button.cus == 8 and homing_owned is False and player_money >= button.cost:
+                            player_money += -button.cost
+                            homing_owned = True
+                        elif button.cus == 9 and player_money >= button.cost:
+                            player_money += -button.cost
+                            freezes_owned += 1
+
+                pygame.display.flip()
+                pygame.display.set_caption('The Shop')
+                screen.fill(white)
 
     ''' Turret '''
     for turret in Turret_array:
