@@ -74,7 +74,7 @@ powerup_delay = 30000
 wave_delay = 20000
 dash_time = 300
 
-''' Initializing Shite '''
+''' Initializing Random Shite '''
 Powerup_array = []
 Button_array = []
 Bullet_array = []
@@ -84,13 +84,14 @@ Money_array = []
 Shop_array = []
 Bot_array = []
 
-finished = weapon_state = dash = freeze = reason_bot = reason_powerup = False
+finished = weapon_state = dash = freeze = reason_bot = reason_powerup = shop_collision = block_collision = sheild_n_shoot = False
 
-weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = battlemoon_level = 0
+weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = 0
 battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = 0
 counter = last_weapon =  turret_level = 1
 wave_time = -wave_time_length
 powerup_active = 3
+battlemoon_level = -1
 
 mouse_state = list(pygame.mouse.get_pressed())
 key_state = list(pygame.key.get_pressed())
@@ -377,14 +378,17 @@ while True:
 
     #Sheild
     if mouse_state[2] == 1 and sheild_health >= 0:
+        sheild_active = True
         pygame.draw.circle(screen, sheild_colour, (int(player_x),int(player_y)), sheild_rad, 3)
-        if powerup_active != 0:
-            sheild_active = True
+        if powerup_active == 0:
+            sheild_n_shoot = True
+        else:
+            sheild_n_shoot = False
     else:
         sheild_active = False
 
     #Weapons
-    if mouse_state[0] == 1 and sheild_active is False:
+    if mouse_state[0] == 1 and (sheild_n_shoot is True or sheild_active is False):
         #SMG
         if weapon == 1 and pygame.time.get_ticks() - weapon_1_fired > Weapon[0][3]:
             weapon_1_fired = pygame.time.get_ticks()
@@ -453,6 +457,8 @@ while True:
 
     ''' Bullets '''
     for bullet in Bullet_array:
+        bullet.Move()
+
         #Block Collision
         for block in Block_array:
             bullet.x, bullet.y, bullet.velocity_x, bullet.velocity_y, block_collision = Blocks(block_size, bullet_size, bullet.x, bullet.y, block.x, block.y, bullet.velocity_x, bullet.velocity_y)
@@ -481,19 +487,18 @@ while True:
                 if Balls(Bot[bot.type][0], bullet_size, bot.x, bot.y, bullet.x, bullet.y) is True:
                     bot.health += -Weapon[bullet.damage_type][0]
                     Bullet_array.remove(bullet)
+                    break
 
         #Bot Bullets
         elif bullet.type == 2:
             #Collision with sheild
-            if powerup_active == 0 or sheild_active is True and Balls(sheild_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
+            if sheild_active is True and Balls(sheild_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
                 Bullet_array.remove(bullet)
 
             #Collision with player
             elif Balls(player_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
                 player_health += - Bot[bot.type][4]
                 Bullet_array.remove(bullet)
-
-        bullet.Move()
 
     ''' Bots '''
     #Wave Spawning
@@ -559,7 +564,7 @@ while True:
                 Bullet_array.append(bullet)
 
             #Collosion with Sheild
-            if Balls(sheild_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True and sheild_active is True or powerup_active == 0:
+            if Balls(sheild_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True and sheild_active is True:
                 bot.x += (-player_x + sheild_rad + bot.x - Bot[bot.type][0])
                 bot.y += (-player_y + sheild_rad + bot.y - Bot[bot.type][0])
                 if powerup_active == 1:
@@ -571,10 +576,7 @@ while True:
             elif Balls(player_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True:
                 bot.x += (-player_x + player_rad + bot.x - Bot[bot.type][0])
                 bot.y += (-player_y + player_rad + bot.y - Bot[bot.type][0])
-                if powerup_active == 1:
-                    bot.health += -sheild_melee_damage
-                else:
-                    player_health += -Bot[bot.type][10]
+                player_health += -Bot[bot.type][10]
 
             #Block Collision
             for block in Block_array:
@@ -636,14 +638,14 @@ while True:
         powerup.Powerup(Powerup)
 
     #Battlemoon
-    if battlemoon_level > 0:
+    if battlemoon_level > -1:
         #Moving the Moon
         battlemoon_angle += 7
         if battlemoon_angle >= 360:
             battlemoon_angle = 0
-        if battlemoon_level > 6:
+        if battlemoon_level > 5:
             battlemoon_health += 50
-            battlemoon_level = 6
+            battlemoon_level = 5
 
         battlemoon_x = player_x + battlemoon_orbit*math.cos(math.radians(battlemoon_angle))
         battlemoon_y = player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle))
@@ -653,8 +655,8 @@ while True:
         pygame.draw.circle(screen, black, (int(battlemoon_x), int(battlemoon_y)), 7, 2)
 
         #Finding the Closest Bot
-        distance = Battlemoon[battlemoon_level][2]
         battlemoon_shoot = False
+        distance = Battlemoon[battlemoon_level][2]
         for bot in Bot_array:
             temp_distance_x = battlemoon_x - bot.x
             temp_distance_y = battlemoon_y - bot.y
@@ -666,13 +668,13 @@ while True:
                 distance_y = temp_distance_y
 
         #Shooting
-        if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][0] is False:
+        if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][0] == 0:
             bullet = Bullet(Battlemoon[battlemoon_level][5], bullet_size, green, battlemoon_x, battlemoon_y, distance_x, distance_y, 1, 0)
             Bullet_array.append(bullet)
 
         #Health
         if battlemoon_health <= 0:
-            battlemoon_level = 0
+            battlemoon_level = -1
 
     ''' Shop '''
     #Updating
@@ -694,9 +696,12 @@ while True:
 
                 mouse_pos = pygame.mouse.get_pos()
 
+                myfont = pygame.font.SysFont('Comic Sans MS', 25)
+                text = myfont.render(' Money:$'+str(player_money)+' Players Health:'+str(player_health)+' Sheilds Health:'+str(sheild_health)+' Freezes Owned:'+str(freezes_owned)+' Turrets Owned:'+str(turret_given)+' Rifle Owned:'+str(rifle_owned)+' Shotgun Owned:'+str(shotgun_owned), False, black)
+                screen.blit(text,(0,0))
+
                 for button in Button_array:
                     button.Draw()
-
                     if mouse_state[0] == 1 and button.Click(mouse_pos[0], mouse_pos[1]) is True:
                         mouse_state[0] = 0
                         if button.cus == 0 and rifle_owned is False and player_money >= int(button.cost):
@@ -709,7 +714,6 @@ while True:
                             player_money += -button.cost
                             turret_given += 1
                         elif button.cus == 3 and player_money >= button.cost:
-                            print('Health')
                             player_money += -button.cost
                             player_health += 15
                         elif button.cus == 4 and player_money >= button.cost:
@@ -799,7 +803,8 @@ while True:
         textsurface = bot_health_font.render(str(player_health), False, black)
         screen.blit(textsurface, (player_x - 8, player_y - 7))
     else:
-        death_screen_goes_here = 1
+        print('ur so shit')
+        pygame.quit()
 
     ''' Writing Stats '''
     if pygame.time.get_ticks() - wave_time < wave_time_length:
@@ -808,6 +813,14 @@ while True:
 
     textsurface = weapon_selected_font.render('Weapon Selected: ' + weapon_name, False, black)
     screen.blit(textsurface, (10, 0))
+
+    if freeze_duration - pygame.time.get_ticks() + weapon_5_fired > 0:
+        freeze_left = int((freeze_duration - pygame.time.get_ticks() + weapon_5_fired)/1000)
+    else:
+        freeze_left = 0
+
+    textsurface = weapon_selected_font.render('Freeze Time: ' + str(freeze_left), False, black)
+    screen.blit(textsurface, (10, 40))
 
     ''' Updating Changes to the Screen '''
     pygame.display.set_caption('The Battleground')
