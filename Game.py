@@ -1,4 +1,3 @@
-''' Import '''
 import pygame
 import math
 import numpy
@@ -26,7 +25,9 @@ fps = 30
 Clock = pygame.time.Clock()
 (screen_width,screen_height) = (1400,1000) #Note this Both need to be Multiples of Block_size
 screen = pygame.display.set_mode((screen_width, screen_height))
+shake_screen = pygame.display.set_mode((screen_width, screen_height))
 
+angle_increase = 0.025
 diagonal_multiplyer = 0.65
 player_y = screen_height/2
 player_x = screen_width/2
@@ -59,20 +60,20 @@ player_rad = 15
 sheild_rad = 30
 bullet_size = 5
 
-#Fonts
-weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
-wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
-bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
-shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
-
 #Timing
 bullet_exist_time = 7000
 freeze_duration = 10000
 wave_time_length = 5000
 powerup_extent = 15000
 powerup_delay = 30000
-wave_delay = 20000
+wave_delay = 15000
 dash_time = 300
+
+#Fonts
+weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
+wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
+bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
+shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
 
 ''' Initializing Random Shite '''
 Powerup_array = []
@@ -88,10 +89,12 @@ finished = weapon_state = dash = freeze = reason_bot = reason_powerup = shop_col
 
 weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = 0
 battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = 0
-counter = last_weapon =  turret_level = 1
+counter = last_weapon = 1
 wave_time = -wave_time_length
 powerup_active = 3
 battlemoon_level = -1
+turret_level = 0
+player_hit_time = -500
 
 mouse_state = list(pygame.mouse.get_pressed())
 key_state = list(pygame.key.get_pressed())
@@ -101,8 +104,8 @@ weapon_name = 'SMG'
 ''' Dictionaries (Well Matrices) '''
 Powerup = [
     #Colour, Radius, Active, Draw
-    [orange, 10], #Sheild and Shoot 0
-    [yellow, 10], #Sheild Melee     1
+    [magenta, 10], #Sheild and Shoot 0
+    [orange, 10], #Sheild Melee     1
     [blue,   10]] #Battlemoon       2
 
 Shop = [
@@ -133,7 +136,7 @@ Turret = [
 
 Weapon = [
     #Damage, Speed, Spray, Firerate, Name
-    [4,   8,  0.1,  100,   'SMG'    ], #SMG     0
+    [8,   8,  0.1,  200,   'SMG'    ], #SMG     0
     [100, 25, 0.01, 1000,  'Sniper' ], #Sniper  1
     [25,  15, 0.1,  1000,  'Shotgun'], #Shotgun 2
     [50,  15, 0,    2000,  'Homing' ], #Homing  3
@@ -154,11 +157,11 @@ Item = [
 
 Bot = [
     #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
-    [15, 6,  blue,    100, 5,  1,  10, 200, 8, 0.5, 2, 0.1], #Default        0
-    [10, 10, grey,    20,  5,  15, 4,  30,  6, 0.5, 2, 0.1], #Sheild-Breaker 1
-    [19, 4,  magenta, 300, 7,  2,  10, 200, 6, 0.5, 2, 0.1], #Doc            2
-    [10, 3,  green,   200, 20, 2,  30, 600, 8, 0.5, 2, 0.1], #Sniper         3
-    [15, 3,  yellow,  100, 2,  1,  10, 200, 8, 0.5, 2, 0.1]] #Block-Breaker  4
+    [15, 6,  blue,    100, 5,  1,  15, 400, 12, 0.5, 2, 0.1], #Default        0
+    [10, 10, grey,    20,  5,  15, 30, 0,   0,  0.5, 8, 0.1], #Sheild-Breaker 1
+    [19, 4,  magenta, 300, 7,  2,  15, 400, 12, 0.5, 2, 0.1], #Doc            2
+    [10, 3,  green,   200, 20, 2,  30, 800, 25, 0.5, 2, 0.1], #Sniper         3
+    [15, 3,  yellow,  100, 2,  1,  15, 400, 12, 0.5, 2, 0.1]] #Block-Breaker  4
 
 ''' Collision Functions '''
 def Blocks(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
@@ -221,10 +224,11 @@ class Bullet():
         self.type = bullet_type
         self.colour = colour
         self.size = size
+        self.speed = speed
         self.x = x
         self.y = y
-        self.velocity_x = speed*(-dx/(abs(dx)+abs(dy)))
-        self.velocity_y = speed*(-dy/(abs(dx)+abs(dy)))
+        self.velocity_x = self.speed*(-dx/(abs(dx)+abs(dy)))
+        self.velocity_y = self.speed*(-dy/(abs(dx)+abs(dy)))
     def Move(self):
         self.x += self.velocity_x
         self.y += self.velocity_y
@@ -407,7 +411,7 @@ while True:
         #Homing
         elif weapon == 4 and homing_owned is True and pygame.time.get_ticks() - weapon_4_fired > Weapon[3][3]:
             weapon_4_fired = pygame.time.get_ticks()
-            bullet = Bullet(Weapon[3][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[4][3]*mouse_pos_y)), abs(int(Weapon[4][3]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[3][2]*mouse_pos_x)), abs(int(Weapon[3][2]*mouse_pos_x))), 1, 3)
+            bullet = Bullet(Weapon[3][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[4][3]*mouse_pos_y)), abs(int(Weapon[4][3]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[3][2]*mouse_pos_x)), abs(int(Weapon[3][2]*mouse_pos_x))), 3, 3)
             Bullet_array.append(bullet)
         #Freeze
         elif weapon == 5 and freezes_owned > 0 and pygame.time.get_ticks() - weapon_5_fired > Weapon[4][3]:
@@ -457,8 +461,6 @@ while True:
 
     ''' Bullets '''
     for bullet in Bullet_array:
-        bullet.Move()
-
         #Block Collision
         for block in Block_array:
             bullet.x, bullet.y, bullet.velocity_x, bullet.velocity_y, block_collision = Blocks(block_size, bullet_size, bullet.x, bullet.y, block.x, block.y, bullet.velocity_x, bullet.velocity_y)
@@ -482,12 +484,65 @@ while True:
             continue
 
         #Player Bullets
-        if bullet.type == 1:
+        if bullet.type == 1 or bullet.type == 3:
             for bot in Bot_array:
                 if Balls(Bot[bot.type][0], bullet_size, bot.x, bot.y, bullet.x, bullet.y) is True:
                     bot.health += -Weapon[bullet.damage_type][0]
                     Bullet_array.remove(bullet)
                     break
+            if bullet.type == 3 and pygame.time.get_ticks() - bullet.exist_time > 500:
+                #Finding the Closest Bot
+                angle_change = False
+                distance_turn = 400
+                for bot in Bot_array:
+                    temp_distance_x = bullet.x - bot.x
+                    temp_distance_y = bullet.y - bot.y
+                    temp_distance_turn = math.hypot(temp_distance_x, temp_distance_y)
+                    if temp_distance_turn < distance_turn:
+                        angle_change = True
+                        distance = temp_distance_turn
+                        distance_x = bot.x
+                        distance_y = bot.y
+
+                if angle_change is True:
+                    (Ax, Ay) = (bullet.x, bullet.y)
+                    (Bx, By) = (bullet.x + (bullet.velocity_x), bullet.y + (bullet.velocity_y))
+                    (Cx, Cy) = (distance_x, distance_y)
+                    direction = numpy.sign((Bx - Ax)*(Cy - Ay) - (By - Ay)*(Cx - Ax))
+
+                    if numpy.sign(bullet.velocity_x) == numpy.sign(bullet.velocity_y):
+                        if direction > 0:
+                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
+                            dx = bullet.velocity_x
+                            dy = bullet.velocity_x*math.tan(alpha + angle_increase)
+
+                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
+                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
+
+                        elif direction <  0:
+                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
+                            dx = bullet.velocity_x
+                            dy = bullet.velocity_x*math.tan(alpha - angle_increase)
+
+                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
+                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
+
+                    else:
+                        if direction > 0:
+                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
+                            dx = bullet.velocity_x
+                            dy = bullet.velocity_x*math.tan(alpha + angle_increase)
+
+                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
+                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
+
+                        elif direction <  0:
+                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
+                            dx = bullet.velocity_x
+                            dy = bullet.velocity_x*math.tan(alpha - angle_increase)
+
+                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
+                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
 
         #Bot Bullets
         elif bullet.type == 2:
@@ -497,8 +552,11 @@ while True:
 
             #Collision with player
             elif Balls(player_rad, bullet_size, bullet.x, bullet.y, player_x, player_y) is True:
+                player_hit_time = pygame.time.get_ticks()
                 player_health += - Bot[bot.type][4]
                 Bullet_array.remove(bullet)
+
+        bullet.Move()
 
     ''' Bots '''
     #Wave Spawning
@@ -576,6 +634,7 @@ while True:
             elif Balls(player_rad, Bot[bot.type][0], bot.x, bot.y, player_x, player_y) is True:
                 bot.x += (-player_x + player_rad + bot.x - Bot[bot.type][0])
                 bot.y += (-player_y + player_rad + bot.y - Bot[bot.type][0])
+                player_hit_time = pygame.time.get_ticks()
                 player_health += -Bot[bot.type][10]
 
             #Block Collision
@@ -823,6 +882,11 @@ while True:
     screen.blit(textsurface, (10, 40))
 
     ''' Updating Changes to the Screen '''
+    if pygame.time.get_ticks() - player_hit_time < 500:
+        x_shake = random.randint(-10, 10)
+        y_shake = random.randint(-10, 10)
+        shake_screen.blit(screen, (0,0), pygame.Rect(0 + x_shake, 0 + y_shake, screen_width + x_shake, screen_height + y_shake))
+
     pygame.display.set_caption('The Battleground')
     pygame.display.flip()
     screen.fill(white)
