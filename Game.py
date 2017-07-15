@@ -1,11 +1,13 @@
 import pygame
+import os
+import time
 import math
 import numpy
 import random
-import time
 
 pygame.init()
 pygame.font.init()
+pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=0)
 
 ''' Variables Managment '''
 #Colour libary
@@ -20,6 +22,19 @@ grey = (128,128,128)
 orange = (255,69,0)
 white = (255,255,255)
 
+#Audio Libary
+smg_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'smg.wav'))
+shotgun_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shotgun.wav'))
+sniper_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'sniper_rifle.wav'))
+heart_beat_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'human-heartbeat.wav'))
+battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'battlemoon_shoot.wav'))
+
+#Font Liabry
+bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
+shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
+wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
+weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
+
 #Game Properties
 fps = 30
 Clock = pygame.time.Clock()
@@ -27,21 +42,21 @@ Clock = pygame.time.Clock()
 screen = pygame.display.set_mode((screen_width, screen_height))
 shake_screen = pygame.display.set_mode((screen_width, screen_height))
 
-angle_increase = 0.025
 diagonal_multiplyer = 0.65
 player_y = screen_height/2
 player_x = screen_width/2
 sheild_melee_damage = 15
 battlemoon_health = 100
+angle_increase = 0.025
 battlemoon_orbit = 35
 sheild_health = 100
 player_health = 100
 block_number = 60
 
 #Starting Conditions
-shotgun_owned = False
+shotgun_owned = True
 homing_owned = False
-rifle_owned = False
+rifle_owned = True
 freezes_owned = 0
 player_money = 0
 blocks_given = 3
@@ -69,11 +84,7 @@ powerup_delay = 30000
 wave_delay = 15000
 dash_time = 300
 
-#Fonts
-weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
-wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
-bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
-shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
+heart_beat_length = 15000
 
 ''' Initializing Random Shite '''
 Powerup_array = []
@@ -86,15 +97,14 @@ Shop_array = []
 Bot_array = []
 
 finished = weapon_state = dash = freeze = reason_bot = reason_powerup = shop_collision = block_collision = sheild_n_shoot = False
-
+battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = turret_level = 0
 weapon_1_fired = weapon_2_fired = weapon_3_fired = weapon_4_fired = weapon_5_fired = 0
-battlemoon_angle = last_dash = player_speedx = player_speedy = wave_number = powerup_active_time = 0
-counter = last_weapon = 1
 wave_time = -wave_time_length
-powerup_active = 3
-battlemoon_level = -1
-turret_level = 0
+counter = last_weapon = 1
 player_hit_time = -500
+heat_beat_time = -heart_beat_length
+battlemoon_level = -1
+powerup_active = 3
 
 mouse_state = list(pygame.mouse.get_pressed())
 key_state = list(pygame.key.get_pressed())
@@ -136,10 +146,10 @@ Turret = [
 
 Weapon = [
     #Damage, Speed, Spray, Firerate, Name
-    [8,   8,  0.1,  200,   'SMG'    ], #SMG     0
-    [100, 25, 0.01, 1000,  'Sniper' ], #Sniper  1
-    [25,  15, 0.1,  1000,  'Shotgun'], #Shotgun 2
-    [50,  15, 0,    2000,  'Homing' ], #Homing  3
+    [8,   8,  0.1,  400,   'SMG'    ], #SMG     0
+    [100, 25, 0.01, 2700,  'Sniper' ], #Sniper  1
+    [25,  15, 0.1,  1300,  'Shotgun'], #Shotgun 2
+    [50,  15, 0,    1000,  'Homing' ], #Homing  3
     [0,   0,  0,    30000, 'Freeze' ]] #Freeze  4
 
 Item = [
@@ -335,23 +345,30 @@ while True:
                 if weapon > 6:
                     weapon = 1
 
+    if key_state[pygame.K_1] == 1: weapon = 1
+    elif key_state[pygame.K_2] == 1: weapon = 2
+    elif key_state[pygame.K_3] == 1: weapon = 3
+    elif key_state[pygame.K_4] == 1: weapon = 4
+    elif key_state[pygame.K_5] == 1: weapon = 5
+    elif key_state[pygame.K_6] == 1: weapon = 6
+
     #Weapon Selecting
-    if key_state[pygame.K_1] == 1 or weapon == 1:
+    if weapon == 1:
         weapon = last_weapon = 1
         weapon_name = 'SMG'
-    elif rifle_owned is True and (key_state[pygame.K_2] == 1 or weapon == 2):
+    elif rifle_owned is True and weapon == 2:
         weapon = last_weapon = 2
         weapon_name = 'Sniper rifle'
-    elif shotgun_owned is True and (key_state[pygame.K_3] == 1 or weapon == 3):
+    elif shotgun_owned is True and weapon == 3:
         weapon = last_weapon = 3
         weapon_name = 'Shotgun'
-    elif homing_owned is True and (key_state[pygame.K_4] == 1 or weapon == 4):
+    elif homing_owned is True and weapon == 4:
         weapon = last_weapon = 4
         weapon_name = 'Homing gun'
-    elif freezes_owned > 0 and (key_state[pygame.K_5] == 1 or weapon == 5):
+    elif freezes_owned > 0 and weapon == 5:
         weapon_name = 'Freeze ray'
         weapon = 5
-    elif turret_given > 0 and (key_state[pygame.K_6] == 1 or weapon == 6):
+    elif turret_given > 0 and weapon == 6:
         weapon_name = 'Turrets'
         weapon = 6
 
@@ -398,16 +415,19 @@ while True:
             weapon_1_fired = pygame.time.get_ticks()
             bullet = Bullet(Weapon[0][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[0][2]*mouse_pos_y)), abs(int(Weapon[0][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[0][2]*mouse_pos_x)), abs(int(Weapon[0][2]*mouse_pos_x))), 1, 0)
             Bullet_array.append(bullet)
+            smg_sound.play()
         #Sniper-rifle
         elif weapon == 2 and rifle_owned is True and pygame.time.get_ticks() - weapon_2_fired > Weapon[1][3]:
             weapon_2_fired = pygame.time.get_ticks()
             bullet = Bullet(Weapon[1][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[1][2]*mouse_pos_y)), abs(int(Weapon[1][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[1][2]*mouse_pos_x)), abs(int(Weapon[1][2]*mouse_pos_x))), 1, 1)
             Bullet_array.append(bullet)
+            sniper_sound.play()
         #Shotgun
         elif weapon == 3 and shotgun_owned is True and pygame.time.get_ticks() - weapon_3_fired > Weapon[2][3]:
             weapon_3_fired = pygame.time.get_ticks()
             bullet = Bullet(Weapon[2][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[2][2]*mouse_pos_y)), abs(int(Weapon[2][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[2][2]*mouse_pos_x)), abs(int(Weapon[2][2]*mouse_pos_x))), 1, 2)
             Bullet_array.append(bullet)
+            shotgun_sound.play()
         #Homing
         elif weapon == 4 and homing_owned is True and pygame.time.get_ticks() - weapon_4_fired > Weapon[3][3]:
             weapon_4_fired = pygame.time.get_ticks()
@@ -490,8 +510,10 @@ while True:
                     bot.health += -Weapon[bullet.damage_type][0]
                     Bullet_array.remove(bullet)
                     break
+
+            #Homing Bullets
             if bullet.type == 3 and pygame.time.get_ticks() - bullet.exist_time > 500:
-                #Finding the Closest Bot
+                #Closest Bot
                 angle_change = False
                 distance_turn = 400
                 for bot in Bot_array:
@@ -505,11 +527,13 @@ while True:
                         distance_y = bot.y
 
                 if angle_change is True:
+                    #Turn Left or Right
                     (Ax, Ay) = (bullet.x, bullet.y)
                     (Bx, By) = (bullet.x + (bullet.velocity_x), bullet.y + (bullet.velocity_y))
                     (Cx, Cy) = (distance_x, distance_y)
                     direction = numpy.sign((Bx - Ax)*(Cy - Ay) - (By - Ay)*(Cx - Ax))
 
+                    #How to Adjust its past (Dont ask about the Maths)
                     if numpy.sign(bullet.velocity_x) == numpy.sign(bullet.velocity_y):
                         if direction > 0:
                             alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
@@ -564,6 +588,12 @@ while True:
         reason_bot = True
         delay_bot = pygame.time.get_ticks()
 
+        #The Player Wave-Bonus
+        block_number += 1
+        player_health += 10
+        sheild_health += 10
+        player_money += 20
+
         #Spawning Shop
         if len(Shop_array) < 1 and wave_number > 0:
             while True:
@@ -576,14 +606,14 @@ while True:
                     break
 
     elif len(Bot_array) == 0 and pygame.time.get_ticks() - delay_bot > wave_delay:
+        wave_time = pygame.time.get_ticks()
         reason_bot = False
         wave_number += 1
-        wave_time = pygame.time.get_ticks()
+
         for thing in range(0, wave_number):
             #Bot 1
-            if thing%2 == 0:
-                bot = NPC(0, Bot[0][3])
-                Bot_array.append(bot)
+            bot = NPC(0, Bot[0][3])
+            Bot_array.append(bot)
 
             #Bot 2
             if thing%3 == 0:
@@ -654,7 +684,7 @@ while True:
 
             #Printing Bot Health
             textsurface = bot_health_font.render(str(int(bot.health)), False, bot_health_colour)
-            screen.blit(textsurface, (bot.x - 12, bot.y - 7))
+            screen.blit(textsurface, (bot.x - 8, bot.y - 8))
 
     ''' PowerUps '''
     #Spawning the Powerups
@@ -730,6 +760,7 @@ while True:
         if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][0] == 0:
             bullet = Bullet(Battlemoon[battlemoon_level][5], bullet_size, green, battlemoon_x, battlemoon_y, distance_x, distance_y, 1, 0)
             Bullet_array.append(bullet)
+            battlemoon_shoot_sound.play()
 
         #Health
         if battlemoon_health <= 0:
@@ -854,6 +885,10 @@ while True:
         player_y = screen_height - player_rad
 
     if player_health > 0:
+        #Heart Beat effect
+        if player_health < 30 and pygame.time.get_ticks() - heat_beat_time > heart_beat_length:
+            heart_beat_sound.play()
+
         #Drawing Player
         pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
         pygame.draw.circle(screen, black ,(int(player_x), int(player_y)), player_rad, 2)
@@ -891,3 +926,10 @@ while True:
     pygame.display.flip()
     screen.fill(white)
     Clock.tick(fps)
+
+    ''' Credit '''
+    #smg_sound - Recorded by Kibblesbob - sourced at http://soundbible.com/1804-M4A1-Single.html - Shortened and Volume Reduced - Attribution 3.0
+    #shotgun_sound - Recorded by RA The Sun God - sourced at http://soundbible.com/2101-12-Ga-Winchester-Shotgun.html - Shortened and Volume Reduced - Attribution 3.0
+    #sniper_sound - Recorded by Kibblesbob - sourced at http://soundbible.com/1788-Sniper-Rifle.html - Public Domain
+    #heart_beat_sound - Recorded by Daniel Simion - sourced at http://soundbible.com/2162-Human-Heartbeat.html - Attribution 3.0
+    #battlemoon_shoot_sound - Recorded by Mike Koenig - sourced at http://soundbible.com/1087-Laser.html - Attribution 3.0
