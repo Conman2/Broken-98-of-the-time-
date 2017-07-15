@@ -28,6 +28,8 @@ shotgun_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-o
 sniper_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'sniper_rifle.wav'))
 heart_beat_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'human-heartbeat.wav'))
 battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'battlemoon_shoot.wav'))
+purchase_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'purchase.wav'))
+shop_entrance = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shop_entrance.wav'))
 
 #Font Liabry
 bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
@@ -774,6 +776,8 @@ while True:
         #Running the Shop
         player_x, player_y, _, _, shop_collision = Blocks(block_size, player_rad, player_x, player_y, shop.x, shop.y, player_speedx, player_speedy)
         if shop_collision is True:
+            heart_beat_sound.stop()
+            shop_entrance.play()
             end_shop = False
             while end_shop is False:
                 for event in pygame.event.get():
@@ -795,33 +799,43 @@ while True:
                     if mouse_state[0] == 1 and button.Click(mouse_pos[0], mouse_pos[1]) is True:
                         mouse_state[0] = 0
                         if button.cus == 0 and rifle_owned is False and player_money >= int(button.cost):
+                            purchase_sound.play()
                             player_money += -button.cost
                             rifle_owned = True
                         elif button.cus == 1 and shotgun_owned is False and player_money >= int(button.cost):
+                            purchase_sound.play()
                             player_money += -button.cost
                             shotgun_owned = True
                         elif button.cus == 2 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             turret_given += 1
                         elif button.cus == 3 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             player_health += 15
                         elif button.cus == 4 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             sheild_health += 15
                         elif button.cus == 5 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             battlemoon_level += 1
                         elif button.cus == 6 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             block_number += 1
                         elif button.cus == 7 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             turret_level += 1
                         elif button.cus == 8 and homing_owned is False and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             homing_owned = True
                         elif button.cus == 9 and player_money >= button.cost:
+                            purchase_sound.play()
                             player_money += -button.cost
                             freezes_owned += 1
 
@@ -888,6 +902,8 @@ while True:
         #Heart Beat effect
         if player_health < 30 and pygame.time.get_ticks() - heat_beat_time > heart_beat_length:
             heart_beat_sound.play()
+        else:
+            heart_beat_sound.stop()
 
         #Drawing Player
         pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
@@ -933,3 +949,5 @@ while True:
     #sniper_sound - Recorded by Kibblesbob - sourced at http://soundbible.com/1788-Sniper-Rifle.html - Public Domain
     #heart_beat_sound - Recorded by Daniel Simion - sourced at http://soundbible.com/2162-Human-Heartbeat.html - Attribution 3.0
     #battlemoon_shoot_sound - Recorded by Mike Koenig - sourced at http://soundbible.com/1087-Laser.html - Attribution 3.0
+    #purchase_sound - Recorded by Muska666 - sourced at http://soundbible.com/1997-Cha-Ching-Register.html - Attribution 3.0
+    #shop entrance - Recorded by Daniel Simion - sourced at http://soundbible.com/2160-Old-Fashion-Door-Bell.html - Attribution 3.0
