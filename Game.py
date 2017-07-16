@@ -73,25 +73,25 @@ powerup_delay = 30000
 wave_delay = 15000
 dash_time = 300
 
-
-
 #Image Libary
-money_image = pygame.image.load(os.path.join(os.path.join(os.getcwd(),'Image'), 'money.png'))
-player_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'player.png'))
-player_bullet_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'player_bullet.png'))
-enemy_bullet_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'enemy_bullet.png'))
-powerup_orange_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'powerup_orange.png'))
-powerup_pink_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'powerup_pink.png'))
-powerup_blue_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'powerup_blue.png'))
+image_path = os.path.join(os.getcwd(), 'Image')
+money_image = pygame.image.load(os.path.join(image_path, 'money.png'))
+player_image = pygame.image.load(os.path.join(image_path, 'player.png'))
+enemy_bullet_image = pygame.image.load(os.path.join(image_path, 'enemy_bullet.png'))
+powerup_pink_image = pygame.image.load(os.path.join(image_path, 'powerup_pink.png'))
+powerup_blue_image = pygame.image.load(os.path.join(image_path, 'powerup_blue.png'))
+player_bullet_image = pygame.image.load(os.path.join(image_path, 'player_bullet.png'))
+powerup_orange_image = pygame.image.load(os.path.join(image_path, 'powerup_orange.png'))
 
 #Audio Libary
-smg_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'smg.wav'))
-shotgun_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shotgun.wav'))
-purchase_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'purchase.wav'))
-sniper_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'sniper_rifle.wav'))
-shop_entrance = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shop_entrance.wav'))
-heart_beat_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'human-heartbeat.wav'))
-battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'battlemoon_shoot.wav'))
+audio_path = os.path.join(os.getcwd(), 'Audio')
+smg_sound = pygame.mixer.Sound(os.path.join(audio_path, 'smg.wav'))
+shotgun_sound = pygame.mixer.Sound(os.path.join(audio_path, 'shotgun.wav'))
+purchase_sound = pygame.mixer.Sound(os.path.join(audio_path, 'purchase.wav'))
+sniper_sound = pygame.mixer.Sound(os.path.join(audio_path, 'sniper_rifle.wav'))
+shop_entrance = pygame.mixer.Sound(os.path.join(audio_path, 'shop_entrance.wav'))
+heart_beat_sound = pygame.mixer.Sound(os.path.join(audio_path, 'human-heartbeat.wav'))
+battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join(audio_path, 'battlemoon_shoot.wav'))
 
 #Font Liabry
 bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
