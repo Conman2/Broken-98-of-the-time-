@@ -7,7 +7,7 @@ import random
 
 pygame.init()
 pygame.font.init()
-pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=0)
+pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=50)
 
 ''' Variables Managment '''
 #Colour libary
@@ -21,21 +21,6 @@ magenta = (255,0,255)
 grey = (128,128,128)
 orange = (255,69,0)
 white = (255,255,255)
-
-#Audio Libary
-smg_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'smg.wav'))
-shotgun_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shotgun.wav'))
-sniper_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'sniper_rifle.wav'))
-heart_beat_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'human-heartbeat.wav'))
-battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'battlemoon_shoot.wav'))
-purchase_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'purchase.wav'))
-shop_entrance = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shop_entrance.wav'))
-
-#Font Liabry
-bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
-shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
-wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
-weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
 
 #Game Properties
 fps = 30
@@ -76,8 +61,10 @@ block_size = 40
 player_rad = 15
 sheild_rad = 30
 bullet_size = 5
+powerup_rad = 10
 
 #Timing
+heart_beat_length = 15000
 bullet_exist_time = 7000
 freeze_duration = 10000
 wave_time_length = 5000
@@ -86,7 +73,31 @@ powerup_delay = 30000
 wave_delay = 15000
 dash_time = 300
 
-heart_beat_length = 15000
+
+
+#Image Libary
+money_image = pygame.image.load(os.path.join(os.path.join(os.getcwd(),'Image'), 'money.png'))
+player_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'player.png'))
+player_bullet_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'player_bullet.png'))
+enemy_bullet_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'enemy_bullet.png'))
+powerup_orange_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'powerup_orange.png'))
+powerup_pink_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'powerup_pink.png'))
+powerup_blue_image = pygame.image.load(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Image', 'powerup_blue.png'))
+
+#Audio Libary
+smg_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'smg.wav'))
+shotgun_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shotgun.wav'))
+purchase_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'purchase.wav'))
+sniper_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'sniper_rifle.wav'))
+shop_entrance = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'shop_entrance.wav'))
+heart_beat_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'human-heartbeat.wav'))
+battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join('D:\Documents\GitHub\Broken-98-of-the-time-\Audio', 'battlemoon_shoot.wav'))
+
+#Font Liabry
+bot_health_font = pygame.font.SysFont('Comic Sans MS', 10)
+shop_button_font = pygame.font.SysFont('Comic Sans MS', 25)
+wave_number_font = pygame.font.SysFont('Comic Sans MS', 100)
+weapon_selected_font = pygame.font.SysFont('Comic Sans MS', 30)
 
 ''' Initializing Random Shite '''
 Powerup_array = []
@@ -114,12 +125,6 @@ key_state = list(pygame.key.get_pressed())
 weapon_name = 'SMG'
 
 ''' Dictionaries (Well Matrices) '''
-Powerup = [
-    #Colour, Radius, Active, Draw
-    [magenta, 10], #Sheild and Shoot 0
-    [orange, 10], #Sheild Melee     1
-    [blue,   10]] #Battlemoon       2
-
 Shop = [
     #Name, Cost
     ['Rifle',      200], #0
@@ -156,16 +161,16 @@ Weapon = [
 
 Item = [
     #x, y, colour, name, cost
-    [60,  60,  red,     'Rifle'  ,      200], #0
-    [240, 60,  yellow,  'Shotgun',      150], #1
-    [420, 60,  pink,    'Turrets',      300], #2
+    [60,  60,  red,     'Rifle'  ,      150], #0
+    [240, 60,  yellow,  'Shotgun',      100], #1
+    [420, 60,  pink,    'Turrets',      200], #2
     [600, 60,  green ,  'Health' ,      20 ], #3
     [780, 60,  magenta, 'Armour' ,      20 ], #4
-    [60,  240, red,     'Battlemoon',   100], #5
-    [240, 240, yellow,  'Block',        80 ], #6
-    [420, 240, pink,    'Turret Level', 200], #7
-    [600, 240, green,   'Homing',       80 ], #6
-    [780, 240, magenta, 'Freezes',      40 ]] #7
+    [60,  240, red,     'Battlemoon',   800], #5
+    [240, 240, yellow,  'Block',        60 ], #6
+    [420, 240, pink,    'Turret Level', 100], #7
+    [600, 240, green,   'Homing',       200 ], #8
+    [780, 240, magenta, 'Freezes',      40 ]] #9
 
 Bot = [
     #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
@@ -244,8 +249,10 @@ class Bullet():
     def Move(self):
         self.x += self.velocity_x
         self.y += self.velocity_y
-        pygame.draw.circle(screen, self.colour, (int(self.x), int(self.y)), self.size, 0)
-        pygame.draw.circle(screen, black, (int(self.x), int(self.y)), self.size, 2)
+        if self.type == 1:
+            screen.blit(player_bullet_image, (self.x - bullet_size, self.y - bullet_size))
+        else:
+            screen.blit(enemy_bullet_image, (self.x - bullet_size, self.y - bullet_size))
 
 class Object():
     def __init__(self, x, y, size, colour, object_type):
@@ -261,9 +268,14 @@ class Object():
     def Turret(self, Turret):
         pygame.draw.circle(screen, Turret[self.type][5], (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 0)
         pygame.draw.circle(screen, black, (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 2)
-    def Powerup(self, Powerup):
-        pygame.draw.circle(screen, Powerup[self.type][0], (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 0)
-        pygame.draw.circle(screen, black, (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 2)
+    def Powerup(self):
+        if self.type == 0:
+            screen.blit(powerup_pink_image, (self.x - powerup_rad, self.y - powerup_rad))
+        elif self.type == 1:
+            screen.blit(powerup_orange_image, (self.x - powerup_rad, self.y - powerup_rad))
+        elif self.type == 2:
+            screen.blit(powerup_blue_image, (self.x - powerup_rad, self.y - powerup_rad))
+
     def Money(self, player_x, player_y):
         dist_x = player_x - self.x
         dist_y = player_y - self.y
@@ -273,8 +285,8 @@ class Object():
             self.Velocity_y = Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
             self.x += self.Velocity_x
             self.y += self.Velocity_y
-        pygame.draw.circle(screen, yellow, (int(self.x), int(self.y)), self.size, 0)
-        pygame.draw.circle(screen, black, (int(self.x), int(self.y)), self.size, 2)
+            screen.blit(money_image, (self.x - self.size, self.y - self.size))
+
 
 class Button():
     def __init__(self, x, y, size, colour, name, cost, imshit):
@@ -298,7 +310,7 @@ class Button():
             return False
 
 ''' Shop Generation '''
-for thingo in range(0, len(Item) - 1):
+for thingo in range(0, len(Item)):
     button = Button(Item[thingo][0], Item[thingo][1], button_size, Item[thingo][2], Item[thingo][3], Item[thingo][4], thingo)
     Button_array.append(button)
 
@@ -702,13 +714,13 @@ while True:
             if position[int(powerup_x/block_size)][int(powerup_y/block_size)] == 0:
                 position[int(powerup_x/block_size)][int(powerup_y/block_size)] = 1
                 pickone = random.randint(0,2)
-                powerup = Object(powerup_x, powerup_y, Powerup[pickone][1], Powerup[pickone][0], pickone)
+                powerup = Object(powerup_x, powerup_y, powerup_rad, _, pickone)
                 Powerup_array.append(powerup)
                 break
 
     #Activating Powerups
     for powerup in Powerup_array:
-        if Balls(player_rad, Powerup[powerup.type][1], powerup.x + block_size/2, powerup.y + block_size/2, player_x, player_y) is True:
+        if Balls(player_rad, powerup_rad, powerup.x + block_size/2, powerup.y + block_size/2, player_x, player_y) is True:
             position[int(powerup.x/block_size)][int(powerup.y/block_size)] = 0
             powerup_active_time = pygame.time.get_ticks()
             powerup_active = powerup.type
@@ -726,7 +738,7 @@ while True:
             sheild_colour = green
             powerup_active = 3
 
-        powerup.Powerup(Powerup)
+        powerup.Powerup()
 
     #Battlemoon
     if battlemoon_level > -1:
@@ -906,8 +918,9 @@ while True:
             heart_beat_sound.stop()
 
         #Drawing Player
-        pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
-        pygame.draw.circle(screen, black ,(int(player_x), int(player_y)), player_rad, 2)
+        #pygame.draw.circle(screen, red, (int(player_x), int(player_y)), player_rad, 0)
+        #pygame.draw.circle(screen, black ,(int(player_x), int(player_y)), player_rad, 2)
+        screen.blit(player_image, (player_x - player_rad, player_y - player_rad))
 
         #Writing Health
         textsurface = bot_health_font.render(str(player_health), False, black)
