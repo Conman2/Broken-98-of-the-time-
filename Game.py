@@ -35,7 +35,7 @@ player_x = screen_width/2
 sheild_melee_damage = 15
 battlemoon_health = 100
 angle_increase = 0.025
-battlemoon_orbit = 35
+battlemoon_orbit = 40
 sheild_health = 100
 player_health = 100
 block_number = 60
@@ -75,7 +75,7 @@ wave_delay = 15000
 dash_time = 300
 
 #Image Libary
-image_path = os.path.join(os.getcwd(), 'Image')
+image_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Image')
 money_image = pygame.image.load(os.path.join(image_path, 'money.png'))
 player_image = pygame.image.load(os.path.join(image_path, 'player.png'))
 enemy_bullet_image = pygame.image.load(os.path.join(image_path, 'enemy_bullet.png'))
@@ -103,12 +103,13 @@ bot_4_image = pygame.image.load(os.path.join(image_path, 'bot_4.png'))
 bot_5_image = pygame.image.load(os.path.join(image_path, 'bot_5.png'))
 
 #Audio Libary
-audio_path = os.path.join(os.getcwd(), 'Audio')
+audio_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Audio')
 smg_sound = pygame.mixer.Sound(os.path.join(audio_path, 'smg.wav'))
 shotgun_sound = pygame.mixer.Sound(os.path.join(audio_path, 'shotgun.wav'))
 purchase_sound = pygame.mixer.Sound(os.path.join(audio_path, 'purchase.wav'))
 sniper_sound = pygame.mixer.Sound(os.path.join(audio_path, 'sniper_rifle.wav'))
 shop_entrance = pygame.mixer.Sound(os.path.join(audio_path, 'shop_entrance.wav'))
+coin_pickup_sound = pygame.mixer.Sound(os.path.join(audio_path, 'coin_pickup.wav'))
 heart_beat_sound = pygame.mixer.Sound(os.path.join(audio_path, 'human-heartbeat.wav'))
 battlemoon_shoot_sound = pygame.mixer.Sound(os.path.join(audio_path, 'battlemoon_shoot.wav'))
 
@@ -129,7 +130,7 @@ heat_beat_time = -heart_beat_length
 wave_time = -wave_time_length
 counter = last_weapon = 1
 player_hit_time = -500
-battlemoon_level = -1
+battlemoon_level = 0
 powerup_active = 3
 
 Powerup_array = []
@@ -175,7 +176,7 @@ Turret = [
 
 Weapon = [
     #Damage, Speed, Spray, Firerate, Name
-    [8,   8,  0.1,  400,   'SMG'    ], #SMG     0
+    [8,   8,  0.1,  300,   'SMG'    ], #SMG     0
     [100, 25, 0.01, 2700,  'Sniper' ], #Sniper  1
     [25,  15, 0.1,  1300,  'Shotgun'], #Shotgun 2
     [50,  15, 0,    1000,  'Homing' ], #Homing  3
@@ -188,10 +189,10 @@ Item = [
     [420, 60,  pink,    'Turrets',      200], #2
     [600, 60,  green ,  'Health' ,      20 ], #3
     [780, 60,  magenta, 'Armour' ,      20 ], #4
-    [60,  240, red,     'Battlemoon',   800], #5
+    [60,  240, red,     'Battlemoon',   80 ], #5
     [240, 240, yellow,  'Block',        60 ], #6
     [420, 240, pink,    'Turret Level', 100], #7
-    [600, 240, green,   'Homing',       200 ], #8
+    [600, 240, green,   'Homing',       200], #8
     [780, 240, magenta, 'Freezes',      40 ]] #9
 
 Bot = [
@@ -252,27 +253,27 @@ class NPC():
         self.y += self.velocity_y
 
         if self.type == 0:
-         screen.blit(bot_1, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_1_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 1:
-         screen.blit(bot_2, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_2_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 2:
-         screen.blit(bot_3, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_3_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 3:
-         screen.blit(bot_4, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_4_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 4:
-         screen.blit(bot_5, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_5_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
 
     def Still(self, Bot):
         if self.type == 0:
-         screen.blit(bot_1, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_1_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 1:
-         screen.blit(bot_2, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_2_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 2:
-         screen.blit(bot_3, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_3_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 3:
-         screen.blit(bot_4, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_4_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
         elif self.type == 4:
-         screen.blit(bot_5, (self.x - Bot[self.type][2], self.y - Bot[self.type][2]))
+            screen.blit(bot_5_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
 
 class Bullet():
     def __init__(self, speed, size, colour, x, y, dx, dy, bullet_type, damage_type):
@@ -310,12 +311,14 @@ class Object():
         pygame.draw.circle(screen, black, (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 2)
     def Powerup(self):
         if self.type == 0:
-            screen.blit(powerup_1_image, (self.x - powerup_rad, self.y - powerup_rad))
+            screen.blit(powerup_1_image, (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
         elif self.type == 1:
-            screen.blit(powerup_2_image, (self.x - powerup_rad, self.y - powerup_rad))
+            screen.blit(powerup_2_image, (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
         elif self.type == 2:
-            screen.blit(powerup_3_image, (self.x - powerup_rad, self.y - powerup_rad))
+            screen.blit(powerup_3_image, (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
+
     def Money(self, player_x, player_y):
+        screen.blit(money_image, (self.x - self.size, self.y - self.size))
         dist_x = player_x - self.x
         dist_y = player_y - self.y
         if math.hypot(dist_x, dist_y) < 300:
@@ -324,7 +327,6 @@ class Object():
             self.Velocity_y = Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
             self.x += self.Velocity_x
             self.y += self.Velocity_y
-            screen.blit(money_image, (self.x - self.size, self.y - self.size))
 
 class Button():
     def __init__(self, x, y, size, colour, name, cost, imshit):
@@ -396,18 +398,18 @@ while True:
                 weapon += 1
                 if weapon > 6:
                     weapon = 1
-            elif key_state[pygame.K_1] == 1:
-                 weapon = 1
-            elif key_state[pygame.K_2] == 1:
-                 weapon = 2
-            elif key_state[pygame.K_3] == 1:
-                weapon = 3
-            elif key_state[pygame.K_4] == 1:
-                 weapon = 4
-            elif key_state[pygame.K_5] == 1:
-                 weapon = 5
-            elif key_state[pygame.K_6] == 1:
-                 weapon = 6
+        elif key_state[pygame.K_1] == 1:
+             weapon = 1
+        elif key_state[pygame.K_2] == 1:
+             weapon = 2
+        elif key_state[pygame.K_3] == 1:
+            weapon = 3
+        elif key_state[pygame.K_4] == 1:
+             weapon = 4
+        elif key_state[pygame.K_5] == 1:
+             weapon = 5
+        elif key_state[pygame.K_6] == 1:
+             weapon = 6
 
     #Weapon Selecting
     if weapon == 1:
@@ -458,11 +460,11 @@ while True:
     if mouse_state[2] == 1 and sheild_health >= 0:
         sheild_active = True
         if sheild_colour == green:
-            screen.blit(sheild_1, (player_x - sheild_rad, player_y - sheild_rad))
+            screen.blit(sheild_1_image, (player_x - sheild_rad, player_y - sheild_rad))
         elif sheild_colour == orange:
-            screen.blit(sheild_1, (player_x - sheild_rad, player_y - sheild_rad))
+            screen.blit(sheild_1_image, (player_x - sheild_rad, player_y - sheild_rad))
         elif sheild_colour == magenta:
-            screen.blit(sheild_1, (player_x - sheild_rad, player_y - sheild_rad))
+            screen.blit(sheild_1_image, (player_x - sheild_rad, player_y - sheild_rad))
 
         if powerup_active == 0:
             sheild_n_shoot = True
@@ -790,14 +792,14 @@ while True:
         powerup.Powerup()
 
     ''' Battlemoon '''
-    if battlemoon_level > -1:
+    if battlemoon_level > 0:
         #Moving the Moon
         battlemoon_angle += 7
         if battlemoon_angle >= 360:
             battlemoon_angle = 0
-        if battlemoon_level > 5:
+        if battlemoon_level > 6:
             battlemoon_health += 50
-            battlemoon_level = 5
+            battlemoon_level = 6
 
         battlemoon_x = player_x + battlemoon_orbit*math.cos(math.radians(battlemoon_angle))
         battlemoon_y = player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle))
@@ -815,9 +817,6 @@ while True:
             screen.blit(battlemoon_5_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
         elif battlemoon_level == 6:
             screen.blit(battlemoon_6_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
-
-        pygame.draw.circle(screen, Battlemoon[battlemoon_level][4], (int(battlemoon_x), int(battlemoon_y)), 7, 0)
-        pygame.draw.circle(screen, black, (int(battlemoon_x), int(battlemoon_y)), 7, 2)
 
         #Finding the Closest Bot
         battlemoon_shoot = False
@@ -951,8 +950,9 @@ while True:
     for money in Money_array:
         money.Money(player_x, player_y)
         if Balls(money.size, player_rad, player_x, player_y, money.x, money.y) is True:
-            player_money += 10
             Money_array.remove(money)
+            coin_pickup_sound.play()
+            player_money += 10
 
     ''' Block '''
     for block in Block_array:
