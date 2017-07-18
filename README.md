@@ -6,3 +6,6 @@
 
 
 "It's actually not bad" - Memeus Prime 
+
+
+"The dankest game you will every play. REEEEEEEEE" - PrayingEMantis
