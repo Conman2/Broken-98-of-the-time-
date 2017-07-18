@@ -40,7 +40,8 @@ def Balls(Radius1,Radius2,x1,y1,x2,y2):
 
 ''' Classes '''
 class NPC():
-    def __init__(self, bot_type, health):
+    def __init__(self, bot_type, health, image):
+        self.image = image
         self.type = bot_type
         self.health = health
         position = random.choice([1,2])
@@ -58,28 +59,10 @@ class NPC():
         self.x += self.velocity_x
         self.y += self.velocity_y
 
-        if self.type == 0:
-            screen.blit(bot_1_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 1:
-            screen.blit(bot_2_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 2:
-            screen.blit(bot_3_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 3:
-            screen.blit(bot_4_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 4:
-            screen.blit(bot_5_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
+        screen.blit(self.image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
 
     def Still(self, Bot):
-        if self.type == 0:
-            screen.blit(bot_1_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 1:
-            screen.blit(bot_2_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 2:
-            screen.blit(bot_3_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 3:
-            screen.blit(bot_4_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
-        elif self.type == 4:
-            screen.blit(bot_5_image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
+        screen.blit(self.image, (int(self.x - Bot[self.type][0]), int(self.y - Bot[self.type][0])))
 
 class Bullet():
     def __init__(self, speed, size, colour, x, y, dx, dy, bullet_type, damage_type):
@@ -293,18 +276,31 @@ while True:
             bullet = Bullet(Weapon[0][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[0][2]*mouse_pos_y)), abs(int(Weapon[0][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[0][2]*mouse_pos_x)), abs(int(Weapon[0][2]*mouse_pos_x))), 1, 0)
             Bullet_array.append(bullet)
             smg_sound.play()
+
         #Sniper-rifle
         elif weapon == 2 and rifle_owned is True and pygame.time.get_ticks() - weapon_2_fired > Weapon[1][3]:
             weapon_2_fired = pygame.time.get_ticks()
             bullet = Bullet(Weapon[1][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[1][2]*mouse_pos_y)), abs(int(Weapon[1][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[1][2]*mouse_pos_x)), abs(int(Weapon[1][2]*mouse_pos_x))), 1, 1)
             Bullet_array.append(bullet)
             sniper_sound.play()
+
         #Shotgun
         elif weapon == 3 and shotgun_owned is True and pygame.time.get_ticks() - weapon_3_fired > Weapon[2][3]:
-            weapon_3_fired = pygame.time.get_ticks()
             bullet = Bullet(Weapon[2][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[2][2]*mouse_pos_y)), abs(int(Weapon[2][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[2][2]*mouse_pos_x)), abs(int(Weapon[2][2]*mouse_pos_x))), 1, 2)
             Bullet_array.append(bullet)
+
+            (shotgun_x1, shotgun_y1) = (mouse_pos_x*numpy.cos(numpy.radians(20)) + mouse_pos_y*numpy.sin(numpy.radians(20)), -mouse_pos_x*numpy.sin(numpy.radians(20)) + mouse_pos_y*numpy.cos(numpy.radians(20)))
+            (shotgun_x2, shotgun_y2) = (mouse_pos_x*numpy.cos(numpy.radians(-20)) + mouse_pos_y*numpy.sin(numpy.radians(-20)), -mouse_pos_x*numpy.sin(numpy.radians(-20)) + mouse_pos_y*numpy.cos(numpy.radians(-20)))
+
+            bullet = Bullet(Weapon[2][1], bullet_size, player_bullet_colour, player_x, player_y, shotgun_x1 + random.randint(-abs(int(Weapon[2][2]*mouse_pos_y)), abs(int(Weapon[2][2]*mouse_pos_y))), shotgun_y1 + random.randint(-abs(int(Weapon[2][2]*mouse_pos_x)), abs(int(Weapon[2][2]*mouse_pos_x))), 1, 2)
+            Bullet_array.append(bullet)
+
+            bullet = Bullet(Weapon[2][1], bullet_size, player_bullet_colour, player_x, player_y, shotgun_x2 + random.randint(-abs(int(Weapon[2][2]*mouse_pos_y)), abs(int(Weapon[2][2]*mouse_pos_y))), shotgun_y2 + random.randint(-abs(int(Weapon[2][2]*mouse_pos_x)), abs(int(Weapon[2][2]*mouse_pos_x))), 1, 2)
+            Bullet_array.append(bullet)
+
+            weapon_3_fired = pygame.time.get_ticks()
             shotgun_sound.play()
+
         #Homing
         elif weapon == 4 and homing_owned is True and pygame.time.get_ticks() - weapon_4_fired > Weapon[3][3]:
             weapon_4_fired = pygame.time.get_ticks()
@@ -411,39 +407,12 @@ while True:
                     direction = numpy.sign((Bx - Ax)*(Cy - Ay) - (By - Ay)*(Cx - Ax))
 
                     #How to Adjust its past (Dont ask about the Maths)
-                    if numpy.sign(bullet.velocity_x) == numpy.sign(bullet.velocity_y):
-                        if direction > 0:
-                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
-                            dx = bullet.velocity_x
-                            dy = bullet.velocity_x*math.tan(alpha + angle_increase)
+                    alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
+                    dx = bullet.velocity_x
+                    dy = bullet.velocity_x*math.tan(alpha + direction*angle_increase)
 
-                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
-                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
-
-                        elif direction <  0:
-                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
-                            dx = bullet.velocity_x
-                            dy = bullet.velocity_x*math.tan(alpha - angle_increase)
-
-                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
-                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
-
-                    else:
-                        if direction > 0:
-                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
-                            dx = bullet.velocity_x
-                            dy = bullet.velocity_x*math.tan(alpha + angle_increase)
-
-                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
-                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
-
-                        elif direction <  0:
-                            alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
-                            dx = bullet.velocity_x
-                            dy = bullet.velocity_x*math.tan(alpha - angle_increase)
-
-                            bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
-                            bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
+                    bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
+                    bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
 
         #Bot Bullets
         elif bullet.type == 2:
@@ -489,27 +458,27 @@ while True:
 
         for thing in range(0, wave_number):
             #Bot 1
-            bot = NPC(0, Bot[0][3])
+            bot = NPC(0, Bot[0][3], bot_1_image)
             Bot_array.append(bot)
 
             #Bot 2
             if thing%3 == 0:
-                bot = NPC(1, Bot[1][3])
+                bot = NPC(1, Bot[1][3], bot_2_image)
                 Bot_array.append(bot)
 
             #Bot 3
             if thing%4 == 0:
-                bot = NPC(2, Bot[2][3])
+                bot = NPC(2, Bot[2][3], bot_3_image)
                 Bot_array.append(bot)
 
             #Bot 4
             if thing > 5 and thing%5 == 0:
-                bot = NPC(3, Bot[3][3])
+                bot = NPC(3, Bot[3][3], bot_4_image)
                 Bot_array.append(bot)
 
             #Bot 5
             if thing > 6 and thing%6 == 0:
-                bot = NPC(4, Bot[4][3])
+                bot = NPC(4, Bot[4][3], bot_5_image)
                 Bot_array.append(bot)
 
     #Updating them
@@ -559,9 +528,9 @@ while True:
 
             bot.Move(Bot)
 
-            #Printing Bot Health
-            textsurface = bot_health_font.render(str(int(bot.health)), False, bot_health_colour)
-            screen.blit(textsurface, (bot.x - 8, bot.y - 8))
+        #Printing Bot Health
+        textsurface = bot_health_font.render(str(int(bot.health)), False, bot_health_colour)
+        screen.blit(textsurface, (bot.x - 8, bot.y - 8))
 
     ''' PowerUps '''
     #Spawning the Powerups
@@ -617,18 +586,7 @@ while True:
         battlemoon_y = player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle))
 
         #Drawing
-        if battlemoon_level == 1:
-            screen.blit(battlemoon_1_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
-        elif battlemoon_level == 2:
-            screen.blit(battlemoon_2_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
-        elif battlemoon_level == 3:
-            screen.blit(battlemoon_3_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
-        elif battlemoon_level == 4:
-            screen.blit(battlemoon_4_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
-        elif battlemoon_level == 5:
-            screen.blit(battlemoon_5_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
-        elif battlemoon_level == 6:
-            screen.blit(battlemoon_6_image, (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
+        screen.blit(battlemoon_imgs[battlemoon_level], (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
 
         #Finding the Closest Bot
         battlemoon_shoot = False

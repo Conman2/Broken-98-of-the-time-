@@ -71,17 +71,11 @@ dash_time = 300
 
 #Image Libary
 image_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Image')
+
 money_image = pygame.image.load(os.path.join(image_path, 'money.png'))
 player_image = pygame.image.load(os.path.join(image_path, 'player.png'))
 enemy_bullet_image = pygame.image.load(os.path.join(image_path, 'enemy_bullet.png'))
 player_bullet_image = pygame.image.load(os.path.join(image_path, 'player_bullet.png'))
-
-battlemoon_1_image = pygame.image.load(os.path.join(image_path, 'battlemoon_1.png'))
-battlemoon_2_image = pygame.image.load(os.path.join(image_path, 'battlemoon_2.png'))
-battlemoon_3_image = pygame.image.load(os.path.join(image_path, 'battlemoon_3.png'))
-battlemoon_4_image = pygame.image.load(os.path.join(image_path, 'battlemoon_4.png'))
-battlemoon_5_image = pygame.image.load(os.path.join(image_path, 'battlemoon_5.png'))
-battlemoon_6_image = pygame.image.load(os.path.join(image_path, 'battlemoon_6.png'))
 
 powerup_1_image = pygame.image.load(os.path.join(image_path, 'powerup_1.png'))
 powerup_2_image = pygame.image.load(os.path.join(image_path, 'powerup_2.png'))
@@ -97,8 +91,18 @@ bot_3_image = pygame.image.load(os.path.join(image_path, 'bot_3.png'))
 bot_4_image = pygame.image.load(os.path.join(image_path, 'bot_4.png'))
 bot_5_image = pygame.image.load(os.path.join(image_path, 'bot_5.png'))
 
+battlemoon_imgs = {
+    1:pygame.image.load(os.path.join(image_path, 'battlemoon_1.png')),
+    2:pygame.image.load(os.path.join(image_path, 'battlemoon_2.png')),
+    3:pygame.image.load(os.path.join(image_path, 'battlemoon_3.png')),
+    4:pygame.image.load(os.path.join(image_path, 'battlemoon_4.png')),
+    5:pygame.image.load(os.path.join(image_path, 'battlemoon_5.png')),
+    6:pygame.image.load(os.path.join(image_path, 'battlemoon_6.png')),
+}
+
 #Audio Libary
 audio_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Audio')
+
 smg_sound = pygame.mixer.Sound(os.path.join(audio_path, 'smg.wav'))
 shotgun_sound = pygame.mixer.Sound(os.path.join(audio_path, 'shotgun.wav'))
 purchase_sound = pygame.mixer.Sound(os.path.join(audio_path, 'purchase.wav'))
