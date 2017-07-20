@@ -18,7 +18,7 @@ orange = (255,69,0)
 white = (255,255,255)
 
 #Game Properties
-fps = 30
+fps = 60
 Clock = pygame.time.Clock()
 (screen_width,screen_height) = (1400,1000) #Note this Both need to be Multiples of Block_size
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -27,12 +27,13 @@ shake_screen = pygame.display.set_mode((screen_width, screen_height))
 diagonal_multiplyer = 0.65
 player_y = screen_height/2
 player_x = screen_width/2
+homing_bullet_range = 400
 sheild_melee_damage = 15
 battlemoon_health = 100
-angle_increase = 0.025
+angle_increase = 0.0125
 battlemoon_orbit = 40
-sheild_health = 100
-player_health = 100
+sheild_health = 90
+player_health = 90
 block_number = 60
 
 #Starting Conditions
@@ -49,10 +50,10 @@ weapon = 1
 player_bullet_colour = green
 bot_health_colour = white
 bot_bullet_colour = black
-sheild_colour = green
 battlemoon_rad = 8
 button_size = 120
 turret_size = 18
+sheild_type = 1
 block_size = 40
 player_rad = 15
 sheild_rad = 30
@@ -77,10 +78,6 @@ player_image = pygame.image.load(os.path.join(image_path, 'player.png'))
 enemy_bullet_image = pygame.image.load(os.path.join(image_path, 'enemy_bullet.png'))
 player_bullet_image = pygame.image.load(os.path.join(image_path, 'player_bullet.png'))
 
-powerup_1_image = pygame.image.load(os.path.join(image_path, 'powerup_1.png'))
-powerup_2_image = pygame.image.load(os.path.join(image_path, 'powerup_2.png'))
-powerup_3_image = pygame.image.load(os.path.join(image_path, 'powerup_3.png'))
-
 sheild_1_image = pygame.image.load(os.path.join(image_path, 'sheild_1.png'))
 sheild_2_image = pygame.image.load(os.path.join(image_path, 'sheild_2.png'))
 sheild_3_image = pygame.image.load(os.path.join(image_path, 'sheild_3.png'))
@@ -99,6 +96,19 @@ battlemoon_imgs = {
     5:pygame.image.load(os.path.join(image_path, 'battlemoon_5.png')),
     6:pygame.image.load(os.path.join(image_path, 'battlemoon_6.png')),
 }
+
+sheild_imgs = {
+    1:pygame.image.load(os.path.join(image_path, 'sheild_1.png')),
+    2:pygame.image.load(os.path.join(image_path, 'sheild_2.png')),
+    3:pygame.image.load(os.path.join(image_path, 'sheild_3.png')),
+}
+
+powerup_imgs = {
+    0:pygame.image.load(os.path.join(image_path, 'powerup_1.png')),
+    1:pygame.image.load(os.path.join(image_path, 'powerup_2.png')),
+    2:pygame.image.load(os.path.join(image_path, 'powerup_3.png')),
+}
+
 
 #Audio Libary
 audio_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Audio')
@@ -159,26 +169,26 @@ Shop = [
 
 Battlemoon = [
     #Shootrate, Damage, Range, Spray, Colour, Speed
-    [30, 4,  300, 0.2,  grey  , 8 ], #Level0
-    [30, 8,  400, 0.1,  green , 10], #Level1
-    [15, 15, 500, 0.08, yellow, 12], #Level2
-    [15, 25, 600, 0.05, orange, 14], #Level3
-    [10, 35, 700, 0.01, red   , 16], #Level4
-    [10, 50, 800, 0,    black , 18]] #Level5
+    [30, 4,  300, 0.2,  grey  , 5 ], #Level0
+    [30, 8,  400, 0.1,  green , 6 ], #Level1
+    [15, 15, 500, 0.08, yellow, 7 ], #Level2
+    [15, 25, 600, 0.05, orange, 8 ], #Level3
+    [10, 35, 700, 0.01, red   , 9 ], #Level4
+    [10, 50, 800, 0,    black , 10]] #Level5
 
 Turret = [
     #Shootrate, Damage, Range, Spray, Speed, Colour
-    [30,  5,  400,  0.2,  8 , grey  ], #Turret0
-    [15,  18, 600,  0.01, 14, orange], #Turret1
-    [15,  35, 800,  0,    18, red   ], #Turret2
-    [10,  80, 1000, 0,    25, black ]] #Turret3
+    [30,  5,  400,  0.2,  5 , grey  ], #Turret0
+    [15,  18, 600,  0.01, 8 , orange], #Turret1
+    [15,  35, 800,  0,    10, red   ], #Turret2
+    [10,  80, 1000, 0,    14, black ]] #Turret3
 
 Weapon = [
     #Damage, Speed, Spray, Firerate, Name
-    [8,   8,  0.1,  300,   'SMG'    ], #SMG     0
-    [100, 25, 0.01, 2700,  'Sniper' ], #Sniper  1
-    [25,  15, 0.1,  1300,  'Shotgun'], #Shotgun 2
-    [50,  15, 0,    1000,  'Homing' ], #Homing  3
+    [8,   5,  0.1,  300,   'SMG'    ], #SMG     0
+    [100, 14, 0.01, 2700,  'Sniper' ], #Sniper  1
+    [25,  8,  0.1,  1300,  'Shotgun'], #Shotgun 2
+    [50,  8,  0,    1000,  'Homing' ], #Homing  3
     [0,   0,  0,    30000, 'Freeze' ]] #Freeze  4
 
 Item = [
@@ -196,11 +206,11 @@ Item = [
 
 Bot = [
     #Radius, Speed, Colour, Health, Bullet Damage, Sheild Damage, Firerate, Range, Bullet Speed, Spray, Melee Damage, Block Damage
-    [15, 6,  blue,    100, 5,  1,  15, 400, 12, 0.5, 2, 0.1], #Default        0
-    [10, 10, grey,    20,  5,  15, 30, 0,   0,  0.5, 8, 0.1], #Sheild-Breaker 1
-    [19, 4,  magenta, 300, 7,  2,  15, 400, 12, 0.5, 2, 0.1], #Doc            2
-    [10, 3,  green,   200, 20, 2,  30, 800, 25, 0.5, 2, 0.1], #Sniper         3
-    [15, 3,  yellow,  100, 2,  1,  15, 400, 12, 0.5, 2, 0.1]] #Block-Breaker  4
+    [15, 4,  blue,    100, 5,  1,  15, 400, 7,  0.5, 2, 0.1], #Default        0
+    [10, 6,  grey,    20,  5,  15, 30, 0,   0,  0.5, 8, 0.1], #Sheild-Breaker 1
+    [19, 3,  magenta, 300, 7,  2,  15, 400, 7,  0.5, 2, 0.1], #Doc            2
+    [10, 2,  green,   200, 20, 2,  30, 800, 14, 0.5, 2, 0.1], #Sniper         3
+    [15, 2,  yellow,  100, 2,  1,  15, 400, 7,  0.5, 2, 0.1]] #Block-Breaker  4
 
 ''' Credit '''
 #smg_sound - Recorded by Kibblesbob - sourced at http://soundbible.com/1804-M4A1-Single.html - Shortened and Volume Reduced - Attribution 3.0

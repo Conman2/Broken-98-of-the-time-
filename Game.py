@@ -11,8 +11,7 @@ pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=50)
 
 ''' Collision Functions '''
 def Blocks(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
-    diffx = x - max(block_x - abs(xspeed), min(x, block_x + Block_size + abs(xspeed)))
-    diffy = y - max(block_y - abs(yspeed), min(y, block_y + Block_size + abs(yspeed)))
+    (diffx, diffy) = (x - max(block_x - abs(xspeed), min(x, block_x + Block_size + abs(xspeed))), y - max(block_y - abs(yspeed), min(y, block_y + Block_size + abs(yspeed))))
     if (diffx*diffx + diffy*diffy) < Radius*Radius:
         if x < block_x and xspeed > 0:
             xspeed = -xspeed
@@ -30,8 +29,7 @@ def Blocks(Block_size, Radius, x, y, block_x, block_y, xspeed, yspeed):
     return x, y, xspeed, yspeed, False
 
 def Balls(Radius1,Radius2,x1,y1,x2,y2):
-    diffx = x1 - x2
-    diffy = y1 - y2
+    (diffx, diffy) = (x1 - x2, y1 - y2)
     distance = math.hypot(diffx, diffy)
     if distance < Radius1 + Radius2:
         return True
@@ -46,16 +44,13 @@ class NPC():
         self.health = health
         position = random.choice([1,2])
         if position == 1:
-            self.x = random.choice([-50, screen_width + 50])
-            self.y = random.randint(0, screen_height)
+            (self.x, self.y ) = (random.choice([-50, screen_width + 50]), random.randint(0, screen_height))
         elif position == 2:
-            self.x = random.randint(0, screen_width)
-            self.y = random.choice([-50, screen_width + 50])
+            (self.x, self.y) = (random.randint(0, screen_width), random.choice([-50, screen_width + 50]))
         self.velocity_x = self.velocity_y = 0
 
     def Move(self, Bot):
-        self.velocity_x = Bot[self.type][1]*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
-        self.velocity_y = Bot[self.type][1]*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
+        (self.velocity_x, self.velocity_y)  = (Bot[self.type][1]*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y))), Bot[self.type][1]*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y))))
         self.x += self.velocity_x
         self.y += self.velocity_y
 
@@ -72,10 +67,8 @@ class Bullet():
         self.colour = colour
         self.size = size
         self.speed = speed
-        self.x = x
-        self.y = y
-        self.velocity_x = self.speed*(-dx/(abs(dx)+abs(dy)))
-        self.velocity_y = self.speed*(-dy/(abs(dx)+abs(dy)))
+        (self.x, self.y) = (x, y)
+        (self.velocity_x, self.velocity_y) = (self.speed*(-dx/(abs(dx)+abs(dy))), self.speed*(-dy/(abs(dx)+abs(dy))))
 
     def Move(self):
         self.x += self.velocity_x
@@ -87,9 +80,8 @@ class Bullet():
 
 class Object():
     def __init__(self, x, y, size, colour, object_type):
+        (self.x, self.y) = (x, y)
         self.type = object_type
-        self.x = x
-        self.y = y
         self.size = size
         self.health = 100
         self.colour = colour
@@ -103,29 +95,21 @@ class Object():
         pygame.draw.circle(screen, black, (int(self.x + block_size/2), int(self.y + block_size/2)), self.size, 2)
 
     def Powerup(self):
-        if self.type == 0:
-            screen.blit(powerup_1_image, (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
-        elif self.type == 1:
-            screen.blit(powerup_2_image, (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
-        elif self.type == 2:
-            screen.blit(powerup_3_image, (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
+        screen.blit(powerup_imgs[self.type], (self.x - powerup_rad + block_size/2, self.y - powerup_rad + block_size/2))
 
     def Money(self, player_x, player_y):
         screen.blit(money_image, (self.x - self.size, self.y - self.size))
-        dist_x = player_x - self.x
-        dist_y = player_y - self.y
+        (dist_x, dist_y) = (player_x - self.x, player_y - self.y)
         if math.hypot(dist_x, dist_y) < 300:
             Speed = 500/math.hypot(dist_x, dist_y)
-            self.Velocity_x = Speed*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y)))
-            self.Velocity_y = Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y)))
+            (self.Velocity_x, self.Velocity_y)  = (Speed*(-(self.x - player_x)/(abs(self.x - player_x)+abs(self.y - player_y))), Speed*(-(self.y - player_y)/(abs(self.x - player_x)+abs(self.y - player_y))))
             self.x += self.Velocity_x
             self.y += self.Velocity_y
 
 class Button():
     def __init__(self, x, y, size, colour, name, cost, imshit):
+        (self.x, self.y) = (x, y)
         self.cus = imshit
-        self.x = x
-        self.y = y
         self.cost = cost
         self.size = size
         self.colour = colour
@@ -150,13 +134,11 @@ for thingo in range(0, len(Item)):
     Button_array.append(button)
 
 ''' Map Generation '''
-x_range = range(0, screen_width,  block_size)
-y_range = range(0, screen_height, block_size)
+(x_range, y_range) = (range(0, screen_width,  block_size), range(0, screen_height, block_size))
 position = numpy.zeros((len(x_range), len(y_range)))
 for i in range(0, block_number):
     while True:
-        x_value = random.choice(x_range)
-        y_value = random.choice(y_range)
+        (x_value, y_value) = (random.choice(x_range), random.choice(y_range))
         if position[int(x_value/block_size)][int(y_value/block_size)] ==  0:
             position[int(x_value/block_size)][int(y_value/block_size)] = 1
             block = Object(x_value, y_value, block_size, grey, 1)
@@ -183,7 +165,7 @@ while True:
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
             mouse_state = list(pygame.mouse.get_pressed())
 
-        #Scroll Wheel
+        #Weapon Selection
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 4:
                 weapon += -1
@@ -228,16 +210,13 @@ while True:
 
     ''' Player '''
     mouse_pos = pygame.mouse.get_pos()
-    mouse_pos_x = player_x - mouse_pos[0]
-    mouse_pos_y = player_y - mouse_pos[1]
+    (mouse_pos_x, mouse_pos_y) = (player_x - mouse_pos[0], player_y - mouse_pos[1])
 
     #Movement
     if dash is False:
-        player_speedx = 7*(key_state[pygame.K_d] - key_state[pygame.K_a])
-        player_speedy = 7*(key_state[pygame.K_s] - key_state[pygame.K_w])
+        (player_speedx, player_speedy) = (5*(key_state[pygame.K_d] - key_state[pygame.K_a]), 5*(key_state[pygame.K_s] - key_state[pygame.K_w]))
         if key_state[pygame.K_SPACE] == 1:
-            player_speedx = player_speedx*3
-            player_speedy = player_speedy*3
+            (player_speedx, player_speedy) = (player_speedx*3, player_speedy*3)
             last_dash = pygame.time.get_ticks()
             key_state[pygame.K_SPACE] = 0
             dash = True
@@ -254,12 +233,7 @@ while True:
     #Sheild
     if mouse_state[2] == 1 and sheild_health >= 0:
         sheild_active = True
-        if sheild_colour == green:
-            screen.blit(sheild_1_image, (player_x - sheild_rad, player_y - sheild_rad))
-        elif sheild_colour == orange:
-            screen.blit(sheild_1_image, (player_x - sheild_rad, player_y - sheild_rad))
-        elif sheild_colour == magenta:
-            screen.blit(sheild_1_image, (player_x - sheild_rad, player_y - sheild_rad))
+        screen.blit(sheild_imgs[sheild_type], (player_x - sheild_rad, player_y - sheild_rad))
 
         if powerup_active == 0:
             sheild_n_shoot = True
@@ -289,6 +263,7 @@ while True:
             bullet = Bullet(Weapon[2][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[2][2]*mouse_pos_y)), abs(int(Weapon[2][2]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[2][2]*mouse_pos_x)), abs(int(Weapon[2][2]*mouse_pos_x))), 1, 2)
             Bullet_array.append(bullet)
 
+            #Vectors used to determin the optimium loaction for the other 2 bullets
             (shotgun_x1, shotgun_y1) = (mouse_pos_x*numpy.cos(numpy.radians(20)) + mouse_pos_y*numpy.sin(numpy.radians(20)), -mouse_pos_x*numpy.sin(numpy.radians(20)) + mouse_pos_y*numpy.cos(numpy.radians(20)))
             (shotgun_x2, shotgun_y2) = (mouse_pos_x*numpy.cos(numpy.radians(-20)) + mouse_pos_y*numpy.sin(numpy.radians(-20)), -mouse_pos_x*numpy.sin(numpy.radians(-20)) + mouse_pos_y*numpy.cos(numpy.radians(-20)))
 
@@ -306,10 +281,12 @@ while True:
             weapon_4_fired = pygame.time.get_ticks()
             bullet = Bullet(Weapon[3][1], bullet_size, player_bullet_colour, player_x, player_y, mouse_pos_x + random.randint(-abs(int(Weapon[4][3]*mouse_pos_y)), abs(int(Weapon[4][3]*mouse_pos_y))), mouse_pos_y + random.randint(-abs(int(Weapon[3][2]*mouse_pos_x)), abs(int(Weapon[3][2]*mouse_pos_x))), 3, 3)
             Bullet_array.append(bullet)
+
         #Freeze
         elif weapon == 5 and freezes_owned > 0 and pygame.time.get_ticks() - weapon_5_fired > Weapon[4][3]:
             weapon_5_fired = pygame.time.get_ticks()
             freeze = True
+
         #Ending the Freeze
         if pygame.time.get_ticks() - weapon_5_fired > freeze_duration:
             freeze = False
@@ -386,9 +363,9 @@ while True:
 
             #Homing Bullets
             if bullet.type == 3 and pygame.time.get_ticks() - bullet.exist_time > 500:
-                #Closest Bot
+                #Determining the Closest Bot
                 angle_change = False
-                distance_turn = 400
+                distance_turn = homing_bullet_range
                 for bot in Bot_array:
                     temp_distance_x = bullet.x - bot.x
                     temp_distance_y = bullet.y - bot.y
@@ -400,16 +377,15 @@ while True:
                         distance_y = bot.y
 
                 if angle_change is True:
-                    #Turn Left or Right
+                    #Turn Left or Right (This is the Cross-Product between the Velocity Vector and the position C to see if it is Left, Right or on the path of Travel)
                     (Ax, Ay) = (bullet.x, bullet.y)
                     (Bx, By) = (bullet.x + (bullet.velocity_x), bullet.y + (bullet.velocity_y))
                     (Cx, Cy) = (distance_x, distance_y)
                     direction = numpy.sign((Bx - Ax)*(Cy - Ay) - (By - Ay)*(Cx - Ax))
 
-                    #How to Adjust its past (Dont ask about the Maths)
+                    #How to Adjust its past (Dont ask about the Maths) *Note there is a minor error where as the bullets velocity approaches vertical the bullet skits out
                     alpha = math.atan(bullet.velocity_y/bullet.velocity_x)
-                    dx = bullet.velocity_x
-                    dy = bullet.velocity_x*math.tan(alpha + direction*angle_increase)
+                    (dx, dy) = (bullet.velocity_x, bullet.velocity_x*math.tan(alpha + direction*angle_increase))
 
                     bullet.velocity_x = bullet.speed*(dx/(abs(dx)+abs(dy)))
                     bullet.velocity_y = bullet.speed*(dy/(abs(dx)+abs(dy)))
@@ -541,8 +517,7 @@ while True:
     elif len(Powerup_array) == 0 and pygame.time.get_ticks() - delay_powerup > powerup_delay:
         reason_powerup = False
         while True:
-            powerup_x = random.choice(x_range)
-            powerup_y = random.choice(y_range)
+            (powerup_x, powerup_y) = (random.choice(x_range), random.choice(y_range))
             if position[int(powerup_x/block_size)][int(powerup_y/block_size)] == 0:
                 position[int(powerup_x/block_size)][int(powerup_y/block_size)] = 1
                 pickone = random.randint(0,2)
@@ -558,17 +533,17 @@ while True:
             powerup_active = powerup.type
             Powerup_array.remove(powerup)
             if powerup_active == 0:
-                sheild_colour = magenta
+                sheild_type = 2
             elif powerup_active == 1:
-                sheild_colour = orange
+                sheild_type = 3
             elif powerup_active == 2:
                 battlemoon_health += 50
                 battlemoon_level += 1
                 powerup_active = 0
 
         if powerup_active != 3 and pygame.time.get_ticks() - powerup_active_time > powerup_extent:
-            sheild_colour = green
             powerup_active = 3
+            sheild_type = 1
 
         powerup.Powerup()
 
@@ -582,8 +557,7 @@ while True:
             battlemoon_health += 50
             battlemoon_level = 6
 
-        battlemoon_x = player_x + battlemoon_orbit*math.cos(math.radians(battlemoon_angle))
-        battlemoon_y = player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle))
+        (battlemoon_x, battlemoon_y) = (player_x + battlemoon_orbit*math.cos(math.radians(battlemoon_angle)), player_y + battlemoon_orbit*math.sin(math.radians(battlemoon_angle)))
 
         #Drawing
         screen.blit(battlemoon_imgs[battlemoon_level], (battlemoon_x - battlemoon_rad, battlemoon_y - battlemoon_rad))
@@ -598,8 +572,7 @@ while True:
             if temp_distance < distance:
                 battlemoon_shoot = True
                 distance = temp_distance
-                distance_x = temp_distance_x
-                distance_y = temp_distance_y
+                (distance_x, distance_y) = (temp_distance_x, temp_distance_y)
 
         #Shooting
         if battlemoon_shoot is True and counter%Battlemoon[battlemoon_level][0] == 0:
@@ -609,7 +582,7 @@ while True:
 
         #Health
         if battlemoon_health <= 0:
-            battlemoon_level = -1
+            battlemoon_level = 0
 
     ''' Shop '''
     #Updating
@@ -692,14 +665,12 @@ while True:
         turret_shoot = False
         distance = Turret[turret.type][2]
         for bot in Bot_array:
-            temp_distance_x = turret.x - bot.x
-            temp_distance_y = turret.y - bot.y
+            (temp_distance_x, temp_distance_y) = (turret.x - bot.x, turret.y - bot.y)
             temp_distance = math.hypot(temp_distance_x, temp_distance_y)
             if temp_distance < distance:
                 turret_shoot = True
                 distance = temp_distance
-                distance_x = temp_distance_x
-                distance_y = temp_distance_y
+                (distance_x, distance_y) = (temp_distance_x,  temp_distance_y)
 
         #Shooting
         if turret_shoot is True and counter%Turret[turret.type][0] == 0:
@@ -777,8 +748,7 @@ while True:
 
     ''' Updating Changes to the Screen '''
     if pygame.time.get_ticks() - player_hit_time < 500:
-        x_shake = random.randint(-10, 10)
-        y_shake = random.randint(-10, 10)
+        (x_shake, y_shake) = (random.randint(-10, 10), random.randint(-10, 10))
         shake_screen.blit(screen, (0,0), pygame.Rect(0 + x_shake, 0 + y_shake, screen_width + x_shake, screen_height + y_shake))
 
     pygame.display.set_caption('The Battleground')
