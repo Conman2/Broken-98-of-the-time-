@@ -9,3 +9,6 @@
 
 
 "The dankest game you will every play. REEEEEEEEE" - PrayingEMantis
+
+"It's a virus, Don't download it" -RedBeard
+
